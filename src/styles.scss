@@ -1,0 +1,45 @@
+// @use '@angular/material' as mat;
+@import 'scss-reset/_reset.scss';
+
+@import '~@angular/material/theming';
+@include mat-core();
+
+$my-app-primary: mat-palette($mat-blue-grey);
+$my-app-accent:  mat-palette($mat-pink, 500, 900, A100);
+$my-app-warn:    mat-palette($mat-deep-orange);
+$my-app-theme: mat-light-theme($my-app-primary, $my-app-accent, $my-app-warn);
+@include angular-material-theme($my-app-theme);
+
+
+// @include mat.core();
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.mat-icon {
+  font-size: 20px;
+}
+
+.custom-element {
+
+  &.selected {
+    border:  3px dashed #39465f73 !important;
+  }
+
+  &.editable-group {
+    border: 2px dashed #39465f73 !important;
+  }
+}
+
+
+.moveable-control {
+  --moveable-color: #7887d1;
+
+  width: 10px !important;
+  height: 10px !important;
+}

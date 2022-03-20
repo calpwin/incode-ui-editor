@@ -1,0 +1,154 @@
+<div class="space-wrapper">
+  <div id="main-space">
+    <div class="space-wrapper">
+      <div class="space-choose-size">
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+          (click)="changeSpaceSize('Phone')"
+        >
+          <mat-icon>phone_iphone</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+          (click)="changeSpaceSize('Tablet')"
+        >
+          <mat-icon>tablet_mac</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+          (click)="changeSpaceSize('Laptop')"
+        >
+          <mat-icon>laptop_mac</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+          (click)="changeSpaceSize('Desktop')"
+        >
+          <mat-icon>desktop_windows</mat-icon>
+        </button>
+      </div>
+
+      <div class="space" #mainSpace>
+        <div class="append-custom-el-to layout-xxl" #appendCustomElement>
+          <div class="css-grid-layout">
+            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
+            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
+            <div class="grid-col col-xxl-1-12"></div>
+            <div class="grid-col col-xxl-1-12"></div>
+            <div class="grid-col col-xxl-1-12"></div>
+            <div class="grid-col col-xxl-1-12"></div>
+          </div>
+
+          <rittry-layout></rittry-layout>
+
+          <!-- <div class="css-grid-layout custom-grid">
+            <div
+              class="grid-col col-xxl-4-12 col-xl-4-8 col-sm-4-4"
+              style="background-color: brown"
+            ></div>
+
+            <div
+              class="grid-col col-xxl-4-12 col-xl-4-8 col-sm-4-4"
+              style="background-color: coral"
+            ></div>
+          </div> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="properties">
+      <div class="layout">
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+        >
+          <mat-icon>border_left</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To center"
+        >
+          <mat-icon>border_horizontal</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To absolute"
+        >
+          <mat-icon>border_vertical</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To absolute"
+        >
+          <mat-icon>border_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="element-properties">
+        <button
+          mat-icon-button
+          class="btn"
+          [color]="selectedElement?.position === 'absolute' ? 'primary' : 'assent'"
+          aria-label="To absolute"
+          [disabled]="selectedElement === undefined"
+        >
+          <mat-icon>border_clear</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          aria-label="Group elements"
+        >
+          <mat-icon>border_clear</mat-icon>
+        </button>
+      </div>
+
+      <div class="element-properties delete-then">
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="To absolute"
+        >
+          <mat-icon>border_clear</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- <div class="ide-wrapper" #ideWrapper>
+    <iframe
+      src="http://localhost:3000/#/home/irotaev/Projects/tmp/express-server"
+    ></iframe>
+  </div> -->
+</div>

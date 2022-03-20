@@ -1,0 +1,17 @@
+main-wrapper:host,
+.main-wrapper {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.main-wrapper {
+  display: flex;
+}
+
+.main-menu-left {
+  z-index: 10;
+  width: 200px;
+  background-color: #2f333d;
+  border-right: 1px solid #4f5257;
+}
