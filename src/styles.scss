@@ -10,9 +10,6 @@ $my-app-warn:    mat-palette($mat-deep-orange);
 $my-app-theme: mat-light-theme($my-app-primary, $my-app-accent, $my-app-warn);
 @include angular-material-theme($my-app-theme);
 
-
-// @include mat.core();
-
 html, body {
   height: 100%;
   width: 100%;

@@ -41,14 +41,23 @@
       flex-direction: column;
     }
 
-    .space-choose-size {
+    .top-bar {
       display: flex;
       width: 100%;
       height: 40px;
       background-color: #efefef;
-      justify-content: center;
       border-bottom: 1px solid #4f5257;
+      justify-content: center;
+      align-items: center;
+    }
 
+    .additional-actions {
+      position: absolute;
+      right: 10px;
+      .btn {font-size: 12px; height: 30px; line-height: 30px;}
+    }
+
+    .space-choose-size {
       .btn {
         margin: 0 10px;
       }

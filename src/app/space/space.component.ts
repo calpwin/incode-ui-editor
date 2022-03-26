@@ -1,3 +1,7 @@
+import { AppConstants } from 'src/app/services/app.constant';
+import { CelementPositionType } from './../ngrx/store/celement-position';
+import { changeCElementPositionAction } from '../ngrx/actions/celement.actions';
+import { CustomElement } from './../ngrx/store/custom-element.state';
 import {
   AfterViewInit,
   Component,
@@ -8,13 +12,26 @@ import {
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
-import { createSelector, State, Store } from '@ngrx/store';
+import { Store } from '@ngrx/store';
 import { SignalRService } from '../hub-connection';
 
 import * as Split from 'split.js';
 import { DOCUMENT } from '@angular/common';
 import { StartupService } from '../services/startup.service';
-import { SpaceMedia } from '../store/space-media';
+import { MediaType, CElementLayoutAlign } from '../ngrx/store/space-media';
+import { HtmlCElementService } from '../services/html-celement.service';
+import { addCElementAction } from '../ngrx/actions/celement.actions';
+import { NewCustomElement } from '../ngrx/store/custom-element.state';
+import { existNotSavedCodeChangesSelector } from '../ngrx/selectors/code-editor.selectors';
+import { saveCodeAction } from '../ngrx/actions/code-editor.actions';
+import {
+  changeMediaAction,
+  changeRootCElLayoutAlignAction,
+} from '../ngrx/actions/space.actions';
+import {
+  currentMediaSelector,
+  currentSelectedCELSelector,
+} from '../ngrx/selectors/space.selectors';
 
 @Component({
   selector: 'rittry-space',
@@ -25,18 +42,25 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   @ViewChild('mainSpace') _mainSpace!: ElementRef<HTMLElement>;
   @ViewChild('ideWrapper') _ideWrapper!: ElementRef;
   @ViewChild('appendCustomElement')
-  _appendCustomElement!: ElementRef<HTMLElement>;
+  appendCElementToViewRef!: ElementRef<HTMLElement>;
 
-  public selectedElement?: {
-    position: string;
-  };
+  existNotSavedCodeChanges = false;
+
+  currentMedia = MediaType.None;
+  MediaType = MediaType;
+  AppConstants = AppConstants;
+  ElementLayoutAlign = CElementLayoutAlign;
+
+  public currentSelectedCel?: CustomElement;
 
   constructor(
     private signalRService: SignalRService,
     private readonly _renderer: Renderer2,
     private readonly _startupService: StartupService,
-    private _store: Store<any>,
-    @Inject(DOCUMENT) private _document: Document
+    private readonly _htmlElementService: HtmlCElementService,
+    private readonly _store: Store<any>,
+    @Inject(DOCUMENT) private readonly _document: Document,
+    private readonly _viewContainerRef: ViewContainerRef
   ) {
     _startupService.bindApplicationEvents();
   }
@@ -47,6 +71,10 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    this.bindSpaceEvents();
+
+    this._startupService.appInit();
+
     this._renderer.setStyle(
       this._mainSpace.nativeElement,
       'width',
@@ -62,176 +90,215 @@ export class SpaceComponent implements OnInit, AfterViewInit {
       minSize: [0, 200],
     };
 
-    // split(
-    //   [this._mainSpace.nativeElement, this._ideWrapper.nativeElement],
-    //   splitOptions
-    // );
-
-    // this._renderer.listen(this._mainSpace.nativeElement, 'click', () => {
-    //   this._store.dispatch(setSelectedElementAction({ elId: undefined }));
-    // });
-
-    // this._store.select(currentSpaceElementSelector).subscribe((spaceEl) => {
-    //   this._currentSpaceElement = spaceEl;
-    // });
-
-    // this._store.select(selectedElementSelector).subscribe((selectedEl) => {
-    //   this.сhangeSelectedElement(selectedEl);
-    // });
-
-    // this._store.select(changeGroupingElementsSelector).subscribe((els) => {
-    //   this.groupingElements = els;
-    // });
-
-    // this._store.dispatch(
-    //   startChangeSpaceMediaAction({ media: SpaceMedia[SpaceMedia.Desktop] })
-    // );
+    this._htmlElementService.initialize();
+    this._htmlElementService.spaceCElViewConRef = this._viewContainerRef;
+    this._htmlElementService.bindEventsToCElements();
   }
 
-  public changeSpaceSize(spaceMedia: string) {
+  public changeMedia(media: MediaType) {
     const rect = this._mainSpace.nativeElement.getBoundingClientRect();
     let scale = 1;
 
-    switch (spaceMedia) {
-      case SpaceMedia[SpaceMedia.Phone]:
+    switch (media) {
+      case MediaType.Phone:
         if (rect.width < 480) {
           scale = rect.width / 480;
         }
 
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'transform',
           `scale(${scale})`
         );
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'flex-basis',
           '480px'
         );
 
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-sm'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xxl'
         );
         this._renderer.addClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-sm'
         );
         break;
-      case SpaceMedia[SpaceMedia.Tablet]:
+      case MediaType.Tablet:
         if (rect.width < 768) {
           scale = rect.width / 768;
         }
 
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'transform',
           `scale(${scale})`
         );
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'flex-basis',
           '768px'
         );
 
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-sm'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xxl'
         );
         this._renderer.addClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         break;
-      case SpaceMedia[SpaceMedia.Laptop]:
+      case MediaType.Laptop:
         if (rect.width < 1024) {
           scale = rect.width / 1024;
         }
 
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'transform',
           `scale(${scale})`
         );
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'flex-basis',
           '1024px'
         );
 
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-sm'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xxl'
         );
         this._renderer.addClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         break;
-      case SpaceMedia[SpaceMedia.Desktop]:
+      case MediaType.Desktop:
         if (rect.width < 1200) {
           scale = rect.width / 1200;
         }
 
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'transform',
           `scale(${scale})`
         );
         this._renderer.setStyle(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'flex-basis',
           '1200px'
         );
 
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-sm'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xl'
         );
         this._renderer.removeClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xxl'
         );
         this._renderer.addClass(
-          this._appendCustomElement.nativeElement,
+          this.appendCElementToViewRef.nativeElement,
           'layout-xxl'
         );
         break;
     }
 
-    // this._store.dispatch(
-    //   startChangeSpaceMediaAction({
-    //     media: spaceMedia,
-    //   })
-    // );
+    this._store.dispatch(
+      changeMediaAction({
+        fromMedia: this.currentMedia, toMedia: media,
+      })
+    );
+  }
+
+  addCElement() {
+    this._store.dispatch(
+      addCElementAction({
+        cel: new NewCustomElement('div'),
+      })
+    );
+  }
+
+  saveCodeToIde() {
+    this._store.dispatch(saveCodeAction());
+  }
+
+  changeRootElLayoutAlign(align: CElementLayoutAlign) {
+    this._store.dispatch(
+      changeRootCElLayoutAlignAction({ toLayoutAlign: align })
+    );
+  }
+
+  toggleCurrentCElPosition() {
+    if (!this.currentSelectedCel) return;
+
+    const position = this._htmlElementService.getStyle(
+      this.currentSelectedCel.id,
+      'position',
+      true
+    );
+
+    this._store.dispatch(
+      changeCElementPositionAction({
+        celId: this.currentSelectedCel.id,
+        position:
+          position === 'absolute'
+            ? CelementPositionType.Relative
+            : CelementPositionType.Absolute,
+      })
+    );
+  }
+
+  private bindSpaceEvents() {
+    this._store
+      .select(existNotSavedCodeChangesSelector)
+      .subscribe((existNotSavedCodeChanges) => {
+        this.existNotSavedCodeChanges = existNotSavedCodeChanges;
+      });
+
+    this._store.select(currentMediaSelector).subscribe((media) => {
+      this.currentMedia = media;
+    });
+
+    this._store.select(currentSelectedCELSelector).subscribe((celId) => {
+      if (!celId) {
+        this.currentSelectedCel = undefined;
+        return;
+      }
+
+      const helm = this._htmlElementService.getElement(celId)!;
+      this.currentSelectedCel = helm.cel;
+    });
   }
 
   // private сhangeSelectedElement(selectedEl: CustomElement | undefined) {

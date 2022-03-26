@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  position: absolute;
+  top: -25px;
+  right: 5px;
+}
+
+.element-fast-action-wrapper {
+  display: flex;
+  justify-content: space-around;
+
+  .icon {
+    color: #607d8b;
+    margin: 2px;
+  }
+
+  .close-icon {
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAABDElEQVRoge3ZXQqCQBSG4a8WUdIWbbmBtRq70A8kxBw9fzOc96oukvOg6QwCWZZlLdUD6LyHwDRDf/THTwAjgAG+mG6eYZxnKu4G4DUf4APgITba/u6LGd5nZvDEiCGYB0YcwSwxaghmgVFHME2MGYJpYMwRTBLjhmASGHcEO4MJg2BHMOEQrAQTFsH2YMIj2BamGgRbw1SHYMs9xPDzOcJGrajlmVE/E1etAwO4/PleRU1cWmt/7Ajb5qK27k7VYPbcYsNjSp4TYTFHHnbhMGee2GEwEssOd4zk2skNo7EANMdormLNMBZLcXWM5X5CDeOxKRLHeO7sxDARtqcimGZevQGNvAzNsiyL1xcbE8X3wv0coQAAAABJRU5ErkJggg==");
+    background-size: 15px;
+    cursor: pointer;
+  }
+
+  .ungroup-icon {
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAArklEQVRoge2YMQ6AIAwA0fj/L+Pk0hBSoEIpd4uD0KQcpWhKAAA7cVXe5Y45Wsxj370TvfEoxnyrlMXTAhm7mzBGqJEdycm2Ln6JHcZImEQ0x+8qmg4EjBhTK3hV08SIMaV933QlwsgEZG1Ury9hjJCIN0jEGyTijR0+dc/qI/wO8obGiFyt7n1cGG9m9wgjFqfTtNhhjIRJZFSxl6YZx4jVp+7yphnGCDUCAAAjvB8DIlBF1rLbAAAAAElFTkSuQmCC");
+    background-size: 15px;
+    cursor: pointer;
+  }
+
+  .into-group-icon {
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAA70lEQVRoge2ZQQrCMBBFHyLewKBXcdu76anc2EVBXOnCE7jxEnXRhMYSpIU0TOU/CKVh2pnXaTYJCCHEP1ADbYbxAk7Apmz5PblEwjiWLT8/B/rOLJ7QlVlZzZ2gFBKxhkSsIRFrSMQaErGGRKwhEWtIxBoSsYZErCERa0jEGhJJcAFugBsR63xskzF/Nq50e7wPvmWGe7/Ox7T+GXNsgTtdgU9g7+djkWHMrnCNo0nJBJHFSATiXydc28HcmHVkgvjrx6N4J6YevdWJd8Sd+dWJHLlYT1ZMkzqRegMVcPb3lZ+bI1cRHAtaE0II43wALt90//S6R7cAAAAASUVORK5CYII=");
+    background-size: 15px;
+    cursor: pointer;
+  }
+
+  .out-from-group-icon {
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAA0klEQVRoge3ZwQnCQBRF0YuIHRi0FDvUtowgqCtdWIG2oYvEjTAS/4zOC7wDrgL+f4UJwYDZUFvgBDS1F8l1AB7AhZHHzIEzXcwVWNZdJ49jVEnEzIANcO8XKfGpcgNYF1hcIuTWD19lfEdDt3zV2/HrV4x6Px+LEktF5ITIREA8RCoC4iFHxB5RoiF7xB4acw/7IJNfD/gXh6hxiBqHqHGIGoeocYgah6hxiBqHqHGIGoeocYiaVEjL9y9f2sD8YnOmgeEpqb9Fdx+ulZxjZjYiT6WKdgJ+74bFAAAAAElFTkSuQmCC");
+    background-size: 15px;
+    cursor: pointer;
+  }
+}

@@ -1,43 +1,59 @@
 <div class="space-wrapper">
   <div id="main-space">
     <div class="space-wrapper">
-      <div class="space-choose-size">
-        <button
-          mat-icon-button
-          class="btn"
-          color="primary"
-          aria-label="To center"
-          (click)="changeSpaceSize('Phone')"
-        >
-          <mat-icon>phone_iphone</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          class="btn"
-          color="primary"
-          aria-label="To center"
-          (click)="changeSpaceSize('Tablet')"
-        >
-          <mat-icon>tablet_mac</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          class="btn"
-          color="primary"
-          aria-label="To center"
-          (click)="changeSpaceSize('Laptop')"
-        >
-          <mat-icon>laptop_mac</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          class="btn"
-          color="primary"
-          aria-label="To center"
-          (click)="changeSpaceSize('Desktop')"
-        >
-          <mat-icon>desktop_windows</mat-icon>
-        </button>
+      <div class="top-bar">
+        <div class="space-choose-size">
+          <!-- <mat-button-toggle-group #group="matButtonToggleGroup"> -->
+          <button
+            mat-icon-button
+            class="btn"
+            [color]="currentMedia !== MediaType.Phone ? 'primary' : 'accent'"
+            aria-label="To center"
+            (click)="changeMedia(MediaType.Phone)"
+          >
+            <mat-icon>phone_iphone</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="btn"
+            [color]="currentMedia !== MediaType.Tablet ? 'primary' : 'accent'"
+            aria-label="To center"
+            (click)="changeMedia(MediaType.Tablet)"
+          >
+            <mat-icon>tablet_mac</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="btn"
+            [color]="currentMedia !== MediaType.Laptop ? 'primary' : 'accent'"
+            aria-label="To center"
+            (click)="changeMedia(MediaType.Laptop)"
+          >
+            <mat-icon>laptop_mac</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="btn"
+            [color]="currentMedia !== MediaType.Desktop ? 'primary' : 'accent'"
+            aria-label="To center"
+            (click)="changeMedia(MediaType.Desktop)"
+          >
+            <mat-icon>desktop_windows</mat-icon>
+          </button>
+          <!-- </mat-button-toggle-group> -->
+        </div>
+
+        <div class="additional-actions">
+          <button
+            mat-flat-button
+            class="btn"
+            color="primary"
+            [disabled]="!existNotSavedCodeChanges"
+            (click)="saveCodeToIde()"
+          >
+            Сохранить
+          </button>
+        </div>
       </div>
 
       <div class="space" #mainSpace>
@@ -57,7 +73,7 @@
             <div class="grid-col col-xxl-1-12"></div>
           </div>
 
-          <rittry-layout></rittry-layout>
+          <rittry-layout [class]="AppConstants.getMediaCssClass(currentMedia)"> </rittry-layout>
 
           <!-- <div class="css-grid-layout custom-grid">
             <div
@@ -81,6 +97,7 @@
           class="btn"
           color="primary"
           aria-label="To center"
+          (click)="changeRootElLayoutAlign(ElementLayoutAlign.Left)"
         >
           <mat-icon>border_left</mat-icon>
         </button>
@@ -90,6 +107,7 @@
           class="btn"
           color="primary"
           aria-label="To center"
+          (click)="changeRootElLayoutAlign(ElementLayoutAlign.Horizontal)"
         >
           <mat-icon>border_horizontal</mat-icon>
         </button>
@@ -99,6 +117,7 @@
           class="btn"
           color="primary"
           aria-label="To absolute"
+          (click)="changeRootElLayoutAlign(ElementLayoutAlign.Vertical)"
         >
           <mat-icon>border_vertical</mat-icon>
         </button>
@@ -108,6 +127,7 @@
           class="btn"
           color="primary"
           aria-label="To absolute"
+          (click)="changeRootElLayoutAlign(ElementLayoutAlign.Right)"
         >
           <mat-icon>border_right</mat-icon>
         </button>
@@ -117,9 +137,8 @@
         <button
           mat-icon-button
           class="btn"
-          [color]="selectedElement?.position === 'absolute' ? 'primary' : 'assent'"
           aria-label="To absolute"
-          [disabled]="selectedElement === undefined"
+          [disabled]="true"
         >
           <mat-icon>border_clear</mat-icon>
         </button>
@@ -128,6 +147,7 @@
           mat-icon-button
           class="btn"
           aria-label="Group elements"
+          (click)="toggleCurrentCElPosition()"
         >
           <mat-icon>border_clear</mat-icon>
         </button>
@@ -139,6 +159,7 @@
           class="btn"
           color="primary"
           aria-label="To absolute"
+          (click)="addCElement()"
         >
           <mat-icon>border_clear</mat-icon>
         </button>
