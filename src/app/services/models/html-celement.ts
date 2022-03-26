@@ -1,7 +1,7 @@
+import { CustomElement } from './../../ngrx/store/custom-element.state';
 import { CElementFastActionComponent } from './../../components/celement-fast-action/celement-fast-action.component';
 import { ComponentRef } from '@angular/core';
 import Moveable from 'moveable/declaration/Moveable';
-import { CustomElement } from './../../ngrx/store/custom-element.state';
 
 export class HtmlCElement {
   constructor(

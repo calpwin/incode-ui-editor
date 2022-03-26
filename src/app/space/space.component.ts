@@ -70,7 +70,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     // this.signalRService.addTransferChartDataListener();
   }
 
-  ngAfterViewInit(): void {
+  async ngAfterViewInit() {
     this.bindSpaceEvents();
 
     this._startupService.appInit();
@@ -90,7 +90,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
       minSize: [0, 200],
     };
 
-    this._htmlElementService.initialize();
+    await this._htmlElementService.initialize();
     this._htmlElementService.spaceCElViewConRef = this._viewContainerRef;
     this._htmlElementService.bindEventsToCElements();
   }
@@ -263,6 +263,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     if (!this.currentSelectedCel) return;
 
     const position = this._htmlElementService.getStyle(
+      this.currentMedia,
       this.currentSelectedCel.id,
       'position',
       true

@@ -4,7 +4,7 @@ import {
 } from './../actions/space.actions';
 import { currentRootElSelector } from './../selectors/space.selectors';
 import { CodeEditorService } from './../../services/code-editor.service';
-import { AppState, ElementStyle } from './../store/initial.state';
+import { AppState } from './../store/initial.state';
 import { HtmlCElementService } from '../../services/html-celement.service';
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
@@ -14,6 +14,7 @@ import { changeCElementStyleAction } from '../actions/celement.actions';
 import {
   changeRootCElLayoutAlignAction,
 } from '../actions/space.actions';
+import { ElementStyle } from '../store/element-style';
 
 @Injectable()
 export class SpaceEffects {
@@ -37,7 +38,7 @@ export class SpaceEffects {
       this.actions$.pipe(
         ofType(changeMediaAction),
         switchMap(({ fromMedia, toMedia }) => {
-          this._codeEditorService.syncEditorStyles();
+          this._codeEditorService.syncEditorStyles(fromMedia);
 
           this._vsCodeService.writeCssToFile(fromMedia);
           this._vsCodeService.readCssFile(toMedia);

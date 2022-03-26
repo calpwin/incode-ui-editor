@@ -1,4 +1,5 @@
-import { ElementStyle } from './initial.state';
+import { ElementStyle } from "./element-style";
+
 export enum CelementPositionType {
   Absolute = 0,
   Relative = 1,

@@ -16,7 +16,9 @@ export class CElementFastActionComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  closeClick() {
+  closeClick(e: MouseEvent) {
+    e.stopImmediatePropagation();
+
     this._store.dispatch(
       removeCElementAction({
         celId: this.celId,

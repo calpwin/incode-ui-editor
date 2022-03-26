@@ -1,4 +1,4 @@
-import { CElement } from './../store/celement';
+import { CustomElement } from './../store/custom-element.state';
 import { selectCElAction } from './../actions/celement.actions';
 import { createReducer, on } from '@ngrx/store';
 import { initialState } from '../store/initial.state';
@@ -18,6 +18,7 @@ import {
   changeHtmlAction,
   saveCodeAction,
 } from '../actions/code-editor.actions';
+import { KeyValuePairModel, MediaElementStyles } from '../store/element-style';
 
 export const reducers = createReducer(
   initialState,
@@ -33,11 +34,13 @@ export const reducers = createReducer(
     return { ...state };
   }),
   on(selectCElAction, (state, prop) => {
-    const findCel = state.celements.find((x) => x.celId === prop.celId);
+    const findCel = state.celements.find((x) => x.id === prop.celId);
     const celements = [...state.celements];
 
     if (!findCel) {
-      const cel = new CElement(prop.celId, prop.celTag, prop.celStyles);
+      const cel = new CustomElement(prop.celId, prop.celTag);
+      cel.mediaStyles.set(state.currentMedia, prop.celStyles);
+      cel.parentCelId = prop.parentCelId;
       celements.push(cel);
     }
 
@@ -51,19 +54,47 @@ export const reducers = createReducer(
 
   //#region Celement
   on(changeCElementStyleAction, (state, prop) => {
+    let cel = state.celements.find((x) => x.id === prop.celId)!;
+    const { styles, stylesChanged } = KeyValuePairModel.override(
+      cel.mediaStyles.getStyles(state.currentMedia),
+      prop.styles
+    );
+
+    let celements = state.celements;
+
+    if (stylesChanged) {
+      cel = { ...cel };
+      cel.mediaStyles.set(state.currentMedia, styles);
+      celements = [...celements.filter((x) => x.id !== cel.id), cel];
+    }
+
     return {
       ...state,
       lastCelementStylesChanged: { celId: prop.celId, styles: prop.styles },
+      celements,
     };
   }),
   on(changeCElementPositionAction, (state, prop) => {
     return { ...state };
   }),
   on(addCElementAction, (state, prop) => {
-    return { ...state };
+    const findCel = state.celements.find((x) => x.id === prop.cel.id);
+    const celements = [...state.celements];
+
+    if (!findCel) {
+      const cel = new CustomElement(prop.cel.id, prop.cel.tagName);
+      MediaElementStyles.override(prop.cel.mediaStyles, cel.mediaStyles);
+      cel.parentCelId = state.currentRootCElementId;
+      celements.push(cel);
+    }
+
+    return { ...state, celements };
   }),
   on(removeCElementAction, (state, prop) => {
-    return { ...state };
+    return {
+      ...state,
+      celements: state.celements.filter((x) => x.id !== prop.celId),
+    };
   }),
   //#endregion
 

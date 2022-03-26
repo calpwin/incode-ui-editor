@@ -2,7 +2,7 @@ import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
 import { Store } from '@ngrx/store';
 import Moveable, { MoveableOptions, OnScale } from 'moveable';
 import { changeCElementStyleAction } from '../ngrx/actions/celement.actions';
-import { KeyValuePairModel } from '../ngrx/store/initial.state';
+import { KeyValuePairModel } from '../ngrx/store/element-style';
 
 @Injectable({
   providedIn: 'root',

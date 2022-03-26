@@ -1,12 +1,12 @@
-import { KeyValuePairModel } from '../store/initial.state';
 import { createAction, props } from '@ngrx/store';
 import { NewCustomElement } from '../store/custom-element.state';
 import { CelementPositionType } from '../store/celement-position';
+import { KeyValuePairModel } from '../store/element-style';
 
 
 export const selectCElAction = createAction(
   'Select custom element on dom',
-  props<{ celId: string, celTag: string, celStyles: KeyValuePairModel[] }>()
+  props<{ celId: string, parentCelId: string, celTag: string, celStyles: KeyValuePairModel[] }>()
 );
 
 export const addCElementAction = createAction(

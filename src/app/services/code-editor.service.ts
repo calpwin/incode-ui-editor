@@ -1,13 +1,11 @@
+import { celementsSelector } from './../ngrx/selectors/celement.selectors';
+import { CustomElement } from './../ngrx/store/custom-element.state';
 import { currentMediaSelector } from './../ngrx/selectors/space.selectors';
 import { MediaType } from './../ngrx/store/space-media';
-import { HtmlCElement } from './models/html-celement';
 import { AppConstants } from './app.constant';
-import { AppState, KeyValuePairModel } from '../ngrx/store/initial.state';
+import { AppState } from '../ngrx/store/initial.state';
 import { HtmlCElementService } from './html-celement.service';
-import {
-  CustomElement,
-  NewCustomElement,
-} from '../ngrx/store/custom-element.state';
+import { NewCustomElement } from '../ngrx/store/custom-element.state';
 import { Inject, Injectable } from '@angular/core';
 import * as htmlparser from 'htmlparser2';
 import * as serializer from 'dom-serializer';
@@ -16,6 +14,7 @@ import { DOCUMENT } from '@angular/common';
 
 import * as csstree from 'css-tree';
 import { Store } from '@ngrx/store';
+import { KeyValuePairModel } from '../ngrx/store/element-style';
 
 @Injectable({
   providedIn: 'root',
@@ -24,8 +23,9 @@ export class CodeEditorService {
   private _doc!: DomDocument;
   private _css!: csstree.CssNode;
 
-  private readonly _cels = new Map<string, CustomElement>();
+  private readonly _domCelIds = new Set<string>();
 
+  private _celements = new Map<string, CustomElement>();
   private _currentMedia = MediaType.None;
 
   constructor(
@@ -40,13 +40,21 @@ export class CodeEditorService {
     this._store
       .select(currentMediaSelector)
       .subscribe((media) => (this._currentMedia = media));
+
+    this._store.select(celementsSelector).subscribe((cels) => {
+      const map = new Map<string, CustomElement>();
+      cels.forEach((cel) => {
+        map.set(cel.id, cel);
+      });
+      this._celements = map;
+    });
   }
 
-  syncEditorStyles() {
+  syncEditorStyles(media: MediaType) {
     const updatedHelms = this._htmlCElementService.getElements(false);
 
-    updatedHelms.forEach(helm => {
-      this.addCssRules(helm.cel.id, helm.cel.styles);
+    updatedHelms.forEach((helm) => {
+      this.addCssRules(helm.cel.id, helm.cel.mediaStyles.getStyles(media));
     });
   }
 
@@ -57,11 +65,11 @@ export class CodeEditorService {
   }
 
   addElToDom(cel: NewCustomElement, spaceElId: string) {
-    if (this._cels.has(cel.id)) {
+    if (this._domCelIds.has(cel.id)) {
       return;
     }
 
-    this._cels.set(cel.id, { ...cel, styles: [...cel.styles] });
+    this._domCelIds.add(cel.id);
 
     const spaceEl = htmlparser.DomUtils.getElementById(
       spaceElId,
@@ -87,7 +95,7 @@ export class CodeEditorService {
   }
 
   removeElFromDom(elId: string) {
-    if (this._cels.has(elId)) this._cels.delete(elId);
+    if (this._domCelIds.has(elId)) this._domCelIds.delete(elId);
 
     const el = htmlparser.DomUtils.getElementById(elId, this._doc.children)!;
 
@@ -107,9 +115,9 @@ export class CodeEditorService {
   }
 
   addCssRules(celId: string, rules: KeyValuePairModel[]) {
-    const onlyNewRules = this._cels.has(celId)
-      ? this.syncRules(celId, rules)
-      : rules;
+    // const onlyNewRules = this._domCelIds.has(celId)
+    //   ? this.syncRules(celId, rules)
+    //   : rules;
 
     let foundIdSelector: csstree.CssNode | undefined = undefined;
 
@@ -125,7 +133,7 @@ export class CodeEditorService {
 
         if (!foundIdSelector) return;
 
-        onlyNewRules.forEach((rule) => {
+        rules.forEach((rule) => {
           const ruleNode = csstree.find(
             node,
             (x) => x.type === 'Declaration' && x.property === rule.name
@@ -174,7 +182,7 @@ export class CodeEditorService {
 
       blockNode.data.block.children.appendData({
         type: 'Raw',
-        value: this.rulesToCss(onlyNewRules),
+        value: this.rulesToCss(rules),
       });
 
       this._css.children.append(blockNode);
@@ -199,29 +207,29 @@ export class CodeEditorService {
    * Sync with editor rules
    * @return only new rules to update in code
    */
-  private syncRules(celId: string, rules: KeyValuePairModel[]) {
-    const cel = this._cels.get(celId)!;
+  // private syncRules(celId: string, rules: KeyValuePairModel[]) {
+  //   const cel = this._celements.get(celId)!;
 
-    const finalRules: KeyValuePairModel[] = [];
+  //   const finalRules: KeyValuePairModel[] = [];
 
-    rules.forEach((rule) => {
-      const style = cel.styles.find((x) => x.name === rule.name);
+  //   rules.forEach((rule) => {
+  //     const style = cel.mediaStyles.find((x) => x.name === rule.name);
 
-      if (!style) {
-        finalRules.push(rule);
-        cel.styles.push(rule);
-        return;
-      }
+  //     if (!style) {
+  //       finalRules.push(rule);
+  //       cel.mediaStyles.push(rule);
+  //       return;
+  //     }
 
-      if (!style.equals(rule)) {
-        finalRules.push(rule);
-        style.value = rule.value;
-        return;
-      }
-    });
+  //     if (!style.equals(rule)) {
+  //       finalRules.push(rule);
+  //       style.value = rule.value;
+  //       return;
+  //     }
+  //   });
 
-    return finalRules;
-  }
+  //   return finalRules;
+  // }
 
   //#endregion
 }

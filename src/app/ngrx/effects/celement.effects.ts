@@ -1,7 +1,6 @@
-import { CElementSerive } from './../../services/celement.service';
 import { CelementPosition } from './../store/celement-position';
 import { CodeEditorService } from './../../services/code-editor.service';
-import { AppState, KeyValuePairModel } from './../store/initial.state';
+import { AppState } from './../store/initial.state';
 import {
   addCElementAction,
   changeCElementPositionAction,
@@ -19,7 +18,6 @@ import {
   changeCssAction,
   changeHtmlAction,
 } from '../actions/code-editor.actions';
-import { celementsSelector } from '../selectors/celement.selectors';
 
 @Injectable()
 export class CElementEffects {
@@ -81,10 +79,8 @@ export class CElementEffects {
   selectCElAction$ = createEffect(() =>
     this.actions$.pipe(
       ofType(selectCElAction),
-      withLatestFrom(this.store$.select(celementsSelector)),
-      switchMap(([{ celId }, cels]) => {
-        const cel = cels.find(x => x.celId === celId)!;
-        this._cElementSerive.addCElement(cel);
+      switchMap(({ celId }) => {
+        this._htmlCElementService.onCElementSelect(celId);
 
         return []
       })
@@ -96,7 +92,6 @@ export class CElementEffects {
     private readonly actions$: Actions,
     private readonly _htmlCElementService: HtmlCElementService,
     private readonly _codeEditorService: CodeEditorService,
-    \private readonly _cElementSerive: CElementSerive,
     private readonly store$: Store<AppState>
   ) {}
 }

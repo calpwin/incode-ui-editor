@@ -1,8 +1,8 @@
+import { MediaType } from './../ngrx/store/space-media';
+import { celementsSelector } from './../ngrx/selectors/celement.selectors';
 import { CElementFastActionComponent } from './../components/celement-fast-action/celement-fast-action.component';
-import {
-  changeRootElAction,
-} from './../ngrx/actions/space.actions';
-import { AppState, KeyValuePairModel } from '../ngrx/store/initial.state';
+import { changeRootElAction } from './../ngrx/actions/space.actions';
+import { AppState } from '../ngrx/store/initial.state';
 import { DOCUMENT } from '@angular/common';
 import {
   Inject,
@@ -14,9 +14,12 @@ import {
 import { AppConstants } from './app.constant';
 import { HtmlMovableElementService } from './html-movable-celement.service';
 import { CustomElement } from '../ngrx/store/custom-element.state';
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { HtmlCElement } from './models/html-celement';
 import { selectCElAction } from '../ngrx/actions/celement.actions';
+import { firstValueFrom, take } from 'rxjs';
+import { uiEditorSpaceFeatureSelector } from '../ngrx/selectors/space.selectors';
+import { KeyValuePairModel } from '../ngrx/store/element-style';
 
 @Injectable({
   providedIn: 'root',
@@ -24,6 +27,9 @@ import { selectCElAction } from '../ngrx/actions/celement.actions';
 export class HtmlCElementService {
   private readonly _renderer: Renderer2;
   private readonly _window: Window;
+
+  // Automatically update from store
+  private _celements = new Map<string, CustomElement>();
 
   // If clicked html element will be in this map,
   // then can be removed by "close element" ui action
@@ -33,7 +39,7 @@ export class HtmlCElementService {
 
   constructor(
     @Inject(DOCUMENT) private _document: Document,
-    private _rendererFactory: RendererFactory2,
+    private readonly _rendererFactory: RendererFactory2,
     private readonly _htmlMovableElementService: HtmlMovableElementService,
     private readonly _store: Store<AppState>
   ) {
@@ -41,21 +47,34 @@ export class HtmlCElementService {
     this._window = _document.defaultView!;
   }
 
-  initialize() {
-    const htmlEl = this._document.getElementById(AppConstants.HtmlRootSpaceElementId)!;
+  async initialize() {
+    this._store.select(celementsSelector).subscribe((cels) => {
+      const map = new Map<string, CustomElement>();
+      cels.forEach((cel) => {
+        map.set(cel.id, cel);
 
-    const hel: HtmlCElement = {
-      cel: { id: AppConstants.HtmlRootSpaceElementId, tagName: htmlEl.tagName, styles: [] },
-      htmlEl,
-    };
+        if (this._htmlEls.has(cel.id)) {
+          this._htmlEls.get(cel.id)!.cel = cel;
+        }
+      });
+      this._celements = map;
+    });
+
+    const htmlEl = this._document.getElementById(
+      AppConstants.HtmlRootSpaceElementId
+    )!;
+
+    const state = await firstValueFrom(this._store.pipe(select(uiEditorSpaceFeatureSelector), take(1)));
+    const cel = state.celements.find(
+      (x) => x.id === AppConstants.HtmlRootSpaceElementId
+    )!;
+
+    const hel: HtmlCElement = { cel, htmlEl };
 
     this._htmlEls.set(AppConstants.HtmlRootSpaceElementId, hel);
   }
 
   bindEventsToCElements() {
-    const htmlRootEl = this._document.getElementById(
-      AppConstants.HtmlRootSpaceElementId
-    )!;
     const htmlEls = this._document.getElementsByClassName(
       AppConstants.HtmlElementClassName
     );
@@ -64,20 +83,18 @@ export class HtmlCElementService {
       const el = htmlEls[i];
       const elId = el.getAttribute('id')!;
 
-      el.addEventListener('click', (e: Event) =>
-        this.onCElementClick(elId, htmlRootEl, e)
-      );
+      el.addEventListener('click', (e: Event) => this.onCElementClick(elId, e));
     }
   }
 
   setStyles(celId: string, styles: KeyValuePairModel[]) {
     const helm = this._htmlEls.get(celId)!;
-    KeyValuePairModel.override(helm.cel.styles, styles);
+    // KeyValuePairModel.override(helm.cel.styles, styles);
 
-    const htmlCel = this._document.getElementById(celId);
+    // const htmlCel = this._document.getElementById(celId);
 
     styles.forEach((style) => {
-      this._renderer.setStyle(htmlCel, style.name, style.value);
+      this._renderer.setStyle(helm.htmlEl, style.name, style.value);
     });
   }
 
@@ -85,12 +102,12 @@ export class HtmlCElementService {
    * Get element style
    * @param withDom if true and style not bind to cel, find in current dom tree
    */
-  getStyle(celId: string, styleName: string, withDom = false) {
+  getStyle(media: MediaType, celId: string, styleName: string, withDom = false) {
     const helm = this._htmlEls.get(celId);
 
     if (!helm) return undefined;
 
-    let style = helm.cel.styles.find((x) => x.name === styleName);
+    let style = helm.cel.mediaStyles.get(media)!.find((x) => x.name === styleName);
 
     if (style || !withDom) return style?.value;
 
@@ -115,7 +132,7 @@ export class HtmlCElementService {
     this._renderer.appendChild(appendToHtmlEl, htmlEl);
 
     this._htmlEls.set(cel.id, {
-      cel: { ...cel, styles: [...cel.styles] },
+      cel,
       htmlEl,
     });
   }
@@ -154,10 +171,9 @@ export class HtmlCElementService {
     helm.moveable = undefined;
   }
 
-  private onCElementClick(celId: string, htmlRootEl: HTMLElement, e: Event) {
-    e.stopImmediatePropagation();
-
+  onCElementSelect(celId: string) {
     let hel = this._htmlEls.get(celId);
+    const cel = this._celements.get(celId)!;
     const htmlEl = this._document.getElementById(celId);
 
     if (!htmlEl) {
@@ -165,12 +181,10 @@ export class HtmlCElementService {
       return;
     }
 
-    if (!hel) {
-      hel = {
-        cel: { id: celId, tagName: htmlRootEl.tagName, styles: [] },
-        htmlEl,
-      };
+    let parentHtmlEl = this._document.getElementById(cel.parentCelId);
 
+    if (!hel) {
+      hel = { cel, htmlEl };
       this._htmlEls.set(celId, hel);
     }
 
@@ -192,12 +206,10 @@ export class HtmlCElementService {
     }
 
     const moveable = this._htmlMovableElementService.makeMovable(
-      htmlRootEl,
-      <HTMLElement>e.currentTarget,
+      parentHtmlEl!,
+      htmlEl,
       {
-        draggable:
-          window.getComputedStyle(<HTMLElement>e.currentTarget).position ===
-          'absolute',
+        draggable: window.getComputedStyle(htmlEl).position === 'absolute',
       }
     );
 
@@ -209,19 +221,51 @@ export class HtmlCElementService {
     fastActionCompRef.instance.celId = celId;
 
     this._renderer.appendChild(
-      e.currentTarget,
+      htmlEl,
       fastActionCompRef.location.nativeElement
     );
 
     hel.fastAtionCompRef = fastActionCompRef;
+  }
+
+  private onCElementClick(celId: string, e: Event) {
+    e.stopImmediatePropagation();
+
+    const htmlEl = e.currentTarget as HTMLElement;
+    const elId = htmlEl.getAttribute('id');
+    const parentHtmlEl = (htmlEl.parentNode as HTMLElement).closest(
+      '.' + AppConstants.HtmlElementClassName
+    ) as HTMLElement;
+    let parentCelId = undefined;
+
+    if (!elId)
+      throw Error(
+        `Can not find id attribute on ${AppConstants.HtmlElementClassName} element`
+      );
+
+    if (elId !== AppConstants.HtmlRootSpaceElementId) {
+      if (!parentHtmlEl) {
+        throw Error(
+          `Can not find parent element with class name: ${AppConstants.HtmlElementClassName}`
+        );
+      }
+
+      parentCelId = parentHtmlEl.getAttribute('id');
+
+      if (!parentCelId) {
+        throw Error(
+          `Can not find id attribute for parent el to el with id: ${elId}`
+        );
+      }
+    }
 
     this._store.dispatch(
       selectCElAction({
         celId,
-        celTag: htmlRootEl.tagName,
-        celStyles: []
+        parentCelId: parentCelId ?? 'it-is-root-el', //TODO maybe remake
+        celTag: (e.currentTarget as HTMLElement).tagName,
+        celStyles: [],
       })
     );
   }
 }
-

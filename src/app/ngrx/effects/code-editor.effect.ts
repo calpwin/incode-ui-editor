@@ -26,7 +26,7 @@ export class CodeEditorEffects {
           this.store$.select(currentMediaSelector)),
         switchMap(([_, media]) => {
 
-          this._codeEditorService.syncEditorStyles();
+          this._codeEditorService.syncEditorStyles(media);
 
           this.writeCodeToIde(RitCommandType.writeHtml, media);
           this.writeCodeToIde(RitCommandType.writeCss, media);

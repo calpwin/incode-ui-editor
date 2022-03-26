@@ -1,6 +1,7 @@
-import { CElementLayoutAlign, MediaType } from './space-media';
+import { CustomElement } from './custom-element.state';
+import {  MediaType } from './space-media';
 import { AppConstants } from 'src/app/services/app.constant';
-import { CElement } from './celement';
+import { KeyValuePairModel } from './element-style';
 
 export class AppState {
   constructor(
@@ -13,7 +14,9 @@ export class AppState {
     public existNotSavedCodeChanges = false,
     public currentMedia = MediaType.None,
     public currentSelectedCelId?: string,
-    public celements: CElement[] = []
+    public celements: CustomElement[] = [
+      new CustomElement(AppConstants.HtmlRootSpaceElementId, 'div'),
+    ]
   ) {}
 }
 
@@ -23,46 +26,5 @@ export const initialState: AppState = {
   existNotSavedCodeChanges: false,
   currentMedia: MediaType.None,
   currentSelectedCelId: undefined,
-  celements: []
+  celements: [new CustomElement(AppConstants.HtmlRootSpaceElementId, 'div')],
 };
-
-//#region Models
-
-export class KeyValuePairModel {
-  constructor(public name: string, public value: string) {}
-
-  equals = (obj: KeyValuePairModel) => {
-    return this.name === obj.name && this.value === obj.value;
-  };
-
-  static override(styles: KeyValuePairModel[], newStyles: KeyValuePairModel[]) {
-    newStyles.forEach((newStyle) => {
-      const style = styles.find((x) => x.name === newStyle.name);
-
-      if (style) {
-        styles.splice(styles.indexOf(style));
-      }
-
-      styles.push(newStyle);
-    });
-  }
-}
-
-export class ElementStyle extends KeyValuePairModel {
-  static fromLayoutAlign(align: CElementLayoutAlign) {
-    switch (align) {
-      case CElementLayoutAlign.Left:
-        return new KeyValuePairModel('justify-content', 'left');
-      case CElementLayoutAlign.Right:
-        return new KeyValuePairModel('justify-content', 'right');
-      case CElementLayoutAlign.Horizontal:
-        return new KeyValuePairModel('align-items', 'center');
-      case CElementLayoutAlign.Vertical:
-        return new KeyValuePairModel('justify-content', 'space-between');
-      default:
-        throw Error(`Layout ${CElementLayoutAlign[align]} not supported`);
-    }
-  }
-}
-
-//#endregion
