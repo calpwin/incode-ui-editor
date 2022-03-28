@@ -22,14 +22,10 @@ export class CodeEditorEffects {
     () =>
       this.actions$.pipe(
         ofType(saveCodeAction),
-        withLatestFrom(
-          this.store$.select(currentMediaSelector)),
-        switchMap(([_, media]) => {
+        withLatestFrom(this.store$.select(currentMediaSelector)),
+        switchMap(([_, __]) => {
 
-          this._codeEditorService.syncEditorStyles(media);
-
-          this.writeCodeToIde(RitCommandType.writeHtml, media);
-          this.writeCodeToIde(RitCommandType.writeCss, media);
+          this.writeCodeToIde();
 
           return [];
         })
@@ -37,7 +33,18 @@ export class CodeEditorEffects {
     { dispatch: false }
   );
 
-  private writeCodeToIde(cmdType: RitCommandType, media: MediaType) {
+  private writeCodeToIde() {
+    for (const mediaKey in MediaType) {
+      const media = Number(mediaKey as keyof typeof MediaType) as MediaType;
+
+      this._codeEditorService.syncEditorStyles(media);
+
+      this.writeCodeToIdeForMedia(RitCommandType.writeHtml, media);
+      this.writeCodeToIdeForMedia(RitCommandType.writeCss, media);
+    }
+  }
+
+  private writeCodeToIdeForMedia(cmdType: RitCommandType, media: MediaType) {
     if (cmdType === RitCommandType.writeHtml) {
       const code = this._codeEditorService.getHtml();
 
@@ -52,10 +59,15 @@ export class CodeEditorEffects {
     }
 
     if (cmdType === RitCommandType.writeCss) {
-      const code = this._codeEditorService.getCss();
+      const code = this._codeEditorService.getCss(media);
 
       this._vsCodeService.writeToFile(
-        new RitReadWriteCommand(RitCommandType.writeCss, MediaHelper.convertToIdeMedia(media), RitPathType.root, code)
+        new RitReadWriteCommand(
+          RitCommandType.writeCss,
+          MediaHelper.convertToIdeMedia(media),
+          RitPathType.root,
+          code
+        )
       );
     }
   }

@@ -1,4 +1,4 @@
-import { CElementLayoutAlign, MediaType } from "./space-media";
+import { CElementLayoutAlign, MediaType } from './space-media';
 
 export class KeyValuePairModel {
   constructor(public name: string, public value: string) {}
@@ -18,7 +18,7 @@ export class KeyValuePairModel {
       if (style) {
         if (!style.equals(newStyle)) stylesChanged = true;
 
-        overrideStyles.splice(overrideStyles.indexOf(style));
+        overrideStyles.splice(overrideStyles.indexOf(style), 1);
       } else {
         stylesChanged = true;
       }
@@ -47,12 +47,41 @@ export class ElementStyle extends KeyValuePairModel {
   }
 }
 
-export class MediaElementStyles extends Map<MediaType, ElementStyle[]> {
+export class FlexboxCelPosition {
+  constructor(
+    // Margine left in css columns
+    public marginLeftCols: number,
+    // Width in css columns
+    public widthCols: number
+  ) {}
+
+  get notValid() {
+    return (
+      this.marginLeftCols < 0 ||
+      this.widthCols < 0 ||
+      (this.marginLeftCols === 0 && this.widthCols === 0)
+    );
+  }
+}
+
+
+export class ElementStyles extends Array<ElementStyle> {
+  constructor() {
+    super();
+  }
+
+  flexboxPosition?: FlexboxCelPosition;
+}
+
+export class MediaElementStyles extends Map<MediaType, ElementStyles> {
   getStyles(media: MediaType) {
     return this.get(media)!;
   }
 
-  static override(fromStyles: MediaElementStyles, toStyles: MediaElementStyles) {
+  static override(
+    fromStyles: MediaElementStyles,
+    toStyles: MediaElementStyles
+  ) {
     toStyles.set(MediaType.None, fromStyles.get(MediaType.None) ?? []);
     toStyles.set(MediaType.Desktop, fromStyles.get(MediaType.Desktop) ?? []);
     toStyles.set(MediaType.Laptop, fromStyles.get(MediaType.Laptop) ?? []);

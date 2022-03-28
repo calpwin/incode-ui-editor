@@ -1,4 +1,4 @@
-import { MediaElementStyles } from './element-style';
+import { ElementStyles, MediaElementStyles } from './element-style';
 import { MediaType } from './space-media';
 
 export class CustomElement {
@@ -8,11 +8,11 @@ export class CustomElement {
   constructor(public id: string, public tagName: string) {
     this.mediaStyles = new MediaElementStyles();
 
-    this.mediaStyles.set(MediaType.None, []);
-    this.mediaStyles.set(MediaType.Desktop, []);
-    this.mediaStyles.set(MediaType.Laptop, []);
-    this.mediaStyles.set(MediaType.Phone, []);
-    this.mediaStyles.set(MediaType.Tablet, []);
+    this.mediaStyles.set(MediaType.None, new ElementStyles());
+    this.mediaStyles.set(MediaType.Desktop, new ElementStyles());
+    this.mediaStyles.set(MediaType.Laptop, new ElementStyles());
+    this.mediaStyles.set(MediaType.Phone, new ElementStyles());
+    this.mediaStyles.set(MediaType.Tablet, new ElementStyles());
   }
 }
 

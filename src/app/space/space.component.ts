@@ -1,3 +1,13 @@
+import { currentRootElSelector } from './../ngrx/selectors/space.selectors';
+import {
+  ElementStyle,
+  FlexboxCelPosition,
+} from './../ngrx/store/element-style';
+import {
+  changeCElementFlexboxColAction,
+  changeCElementStyleAction,
+} from './../ngrx/actions/celement.actions';
+import { celementsSelector } from './../ngrx/selectors/celement.selectors';
 import { AppConstants } from 'src/app/services/app.constant';
 import { CelementPositionType } from './../ngrx/store/celement-position';
 import { changeCElementPositionAction } from '../ngrx/actions/celement.actions';
@@ -12,7 +22,7 @@ import {
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { SignalRService } from '../hub-connection';
 
 import * as Split from 'split.js';
@@ -32,6 +42,7 @@ import {
   currentMediaSelector,
   currentSelectedCELSelector,
 } from '../ngrx/selectors/space.selectors';
+import { firstValueFrom, map, take, withLatestFrom } from 'rxjs';
 
 @Component({
   selector: 'rittry-space',
@@ -46,12 +57,32 @@ export class SpaceComponent implements OnInit, AfterViewInit {
 
   existNotSavedCodeChanges = false;
 
-  currentMedia = MediaType.None;
   MediaType = MediaType;
   AppConstants = AppConstants;
   ElementLayoutAlign = CElementLayoutAlign;
 
-  public currentSelectedCel?: CustomElement;
+  get currentMediaAsync() {
+    return this._store.pipe(select(currentMediaSelector), take(1));
+  }
+
+  selectedCelFlexboxPosition?: FlexboxCelPosition;
+
+  public get currentSelectedCelAsync() {
+    return this._store.pipe(
+      select(currentSelectedCELSelector),
+      withLatestFrom(this._store.select(celementsSelector)),
+      map(([celId, cels]) => {
+        return cels.find((x) => x.id === celId);
+      }),
+      take(1)
+    );
+  }
+
+  get rootCElementIdAsync() {
+    return this._store.pipe(select(currentRootElSelector), take(1));
+  }
+
+  currentRootCelDirection: 'row' | 'column' | undefined = undefined;
 
   constructor(
     private signalRService: SignalRService,
@@ -71,7 +102,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   }
 
   async ngAfterViewInit() {
-    this.bindSpaceEvents();
+    await this.bindSpaceEventsAsync();
 
     this._startupService.appInit();
 
@@ -95,7 +126,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     this._htmlElementService.bindEventsToCElements();
   }
 
-  public changeMedia(media: MediaType) {
+  public async changeMedia(media: MediaType) {
     const rect = this._mainSpace.nativeElement.getBoundingClientRect();
     let scale = 1;
 
@@ -232,11 +263,39 @@ export class SpaceComponent implements OnInit, AfterViewInit {
           'layout-xxl'
         );
         break;
+      case MediaType.None:
+        this._renderer.removeStyle(
+          this.appendCElementToViewRef.nativeElement,
+          'transform'
+        );
+        this._renderer.removeStyle(
+          this.appendCElementToViewRef.nativeElement,
+          'flex-basis'
+        );
+
+        this._renderer.removeClass(
+          this.appendCElementToViewRef.nativeElement,
+          'layout-sm'
+        );
+        this._renderer.removeClass(
+          this.appendCElementToViewRef.nativeElement,
+          'layout-xl'
+        );
+        this._renderer.removeClass(
+          this.appendCElementToViewRef.nativeElement,
+          'layout-xxl'
+        );
+        this._renderer.addClass(
+          this.appendCElementToViewRef.nativeElement,
+          'layout-xxl'
+        );
+        break;
     }
 
     this._store.dispatch(
       changeMediaAction({
-        fromMedia: this.currentMedia, toMedia: media,
+        fromMedia: (await this.currentMediaAsync.toPromise())!,
+        toMedia: media,
       })
     );
   }
@@ -259,19 +318,48 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
   }
 
-  toggleCurrentCElPosition() {
-    if (!this.currentSelectedCel) return;
+  async onSelectedCelMarginLeftColsChange(e: any) {
+    const selectedCel = await firstValueFrom(this.currentSelectedCelAsync);
+
+    this.selectedCelFlexboxPosition ??= new FlexboxCelPosition(0, 0);
+    this.selectedCelFlexboxPosition.marginLeftCols = e.target.value;
+  }
+
+  async onSelectedCelWidthColsChange(e: any) {
+    const selectedCel = await firstValueFrom(this.currentSelectedCelAsync);
+
+    this.selectedCelFlexboxPosition ??= new FlexboxCelPosition(0, 0);
+    this.selectedCelFlexboxPosition.widthCols = e.target.value;
+
+    this._store.dispatch(
+      changeCElementFlexboxColAction({
+        celId: selectedCel!.id,
+        position: new FlexboxCelPosition(
+          this.selectedCelFlexboxPosition.marginLeftCols,
+          this.selectedCelFlexboxPosition.widthCols
+        ),
+      })
+    );
+  }
+
+  async toggleCurrentCElPosition() {
+    if (!this.currentSelectedCelAsync) return;
+
+    const currentSelectedCel = await firstValueFrom(
+      this.currentSelectedCelAsync
+    );
+    const currentMedia = await firstValueFrom(this.currentMediaAsync);
 
     const position = this._htmlElementService.getStyle(
-      this.currentMedia,
-      this.currentSelectedCel.id,
+      currentMedia!,
+      currentSelectedCel!.id,
       'position',
       true
     );
 
     this._store.dispatch(
       changeCElementPositionAction({
-        celId: this.currentSelectedCel.id,
+        celId: currentSelectedCel!.id,
         position:
           position === 'absolute'
             ? CelementPositionType.Relative
@@ -280,160 +368,98 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
   }
 
-  private bindSpaceEvents() {
+  async toggleRootElDirection() {
+    const rootCelId = await firstValueFrom(this.rootCElementIdAsync);
+    const currentMedia = await firstValueFrom(this.currentMediaAsync);
+
+    let directionStyleVal = this._htmlElementService.getStyle(
+      currentMedia!,
+      rootCelId,
+      'flex-direction',
+      true
+    ) as 'row' | 'column';
+
+    directionStyleVal = directionStyleVal === 'row' ? 'column' : 'row';
+    this.currentRootCelDirection = directionStyleVal;
+
+    this._store.dispatch(
+      changeCElementStyleAction({
+        celId: rootCelId,
+        styles: [new ElementStyle('flex-direction', directionStyleVal)],
+      })
+    );
+  }
+
+  async toggleElColsWidth() {
+    const selectedCel = await firstValueFrom(this.currentSelectedCelAsync);
+
+    if (!this.selectedCelFlexboxPosition) {
+      this.selectedCelFlexboxPosition = new FlexboxCelPosition(0, 2);
+
+      this._store.dispatch(
+        changeCElementFlexboxColAction({
+          celId: selectedCel!.id,
+          position: new FlexboxCelPosition(
+            this.selectedCelFlexboxPosition.marginLeftCols,
+            this.selectedCelFlexboxPosition.widthCols
+          ),
+        })
+      );
+    } else {
+      this._store.dispatch(
+        changeCElementFlexboxColAction({
+          celId: selectedCel!.id,
+          position: undefined
+        })
+      );
+    }
+  }
+
+  private async bindSpaceEventsAsync() {
     this._store
       .select(existNotSavedCodeChangesSelector)
       .subscribe((existNotSavedCodeChanges) => {
         this.existNotSavedCodeChanges = existNotSavedCodeChanges;
       });
 
-    this._store.select(currentMediaSelector).subscribe((media) => {
-      this.currentMedia = media;
-    });
+    this._store
+      .select(currentSelectedCELSelector)
+      .pipe(withLatestFrom(this._store.select(celementsSelector)))
+      .subscribe(async ([celId, cels]) => {
+        const cel = cels.find((x) => x.id === celId);
 
-    this._store.select(currentSelectedCELSelector).subscribe((celId) => {
-      if (!celId) {
-        this.currentSelectedCel = undefined;
-        return;
-      }
+        if (!cel) {
+          this.selectedCelFlexboxPosition = undefined;
+          return;
+        }
 
-      const helm = this._htmlElementService.getElement(celId)!;
-      this.currentSelectedCel = helm.cel;
-    });
+        const currentMedia = await firstValueFrom(this.currentMediaAsync);
+
+        const position = new FlexboxCelPosition(0, 0);
+        position.widthCols =
+          cel.mediaStyles.getStyles(currentMedia).flexboxPosition?.widthCols ??
+          0;
+        position.marginLeftCols =
+          cel.mediaStyles.getStyles(currentMedia).flexboxPosition
+            ?.marginLeftCols ?? 0;
+
+        if (position.notValid) {
+          const hel = this._htmlElementService.getElement(cel.id)!;
+          const flexboxClass =
+            HtmlCElementService.getFlexboxColClass(currentMedia);
+          hel.htmlEl.classList.forEach((cls) => {
+            if (!cls.startsWith(flexboxClass.prefix)) return;
+
+            let match = cls.match(`${flexboxClass.prefix}(\\d)+-(\\d)+-\\d+`);
+
+            if (!match) return;
+
+            position.marginLeftCols = Number(match[1]);
+            position.widthCols = Number(match[2]);
+          });
+        }
+
+        this.selectedCelFlexboxPosition = !position.notValid ? position : undefined;
+      });
   }
-
-  // private сhangeSelectedElement(selectedEl: CustomElement | undefined) {
-  //   if (this.selectedElement) {
-  //     this._renderer.removeChild(
-  //       this.selectedElement.element.htmlEl,
-  //       this.selectedElement.fastElementActionHtmlElement
-  //     );
-  //   }
-
-  //   if (!selectedEl) {
-  //     this.selectedElement = undefined;
-  //     return;
-  //   }
-
-  //   const element = this._elementService.getElement(selectedEl.id);
-  //   if (!element) return;
-
-  //   const elementFastActionComponentFactory =
-  //     this.componentFactoryResolver.resolveComponentFactory(
-  //       ElementFastActionComponent
-  //     );
-  //   const elementFastActionComponent = this.viewContainerRef.createComponent(
-  //     elementFastActionComponentFactory
-  //   );
-
-  //   // const closeBtnElement = this._renderer.createElement('div') as HTMLElement;
-  //   // this._renderer.addClass(closeBtnElement, 'element-fast-action-wrapper');
-  //   // this._renderer.listen(closeBtnElement, 'click', (event) => {
-  //   //   this._store.dispatch(
-  //   //     removeCustomElementAction({
-  //   //       element: element.customEl,
-  //   //       fromStorage: true,
-  //   //     })
-  //   //   );
-  //   // });
-
-  //   elementFastActionComponent.instance.groupRootEl = element.customEl;
-  //   elementFastActionComponent.instance.currentSpaceEl =
-  //     this._currentSpaceElement;
-
-  //   const htmlEl = this._document.getElementById(selectedEl.id) as HTMLElement;
-
-  //   this._renderer.appendChild(
-  //     htmlEl,
-  //     elementFastActionComponent.location.nativeElement
-  //   );
-
-  //   const elPosition = element.customEl.styles.find(
-  //     (x) => x.name === 'position'
-  //   );
-  //   this.selectedElement = {
-  //     element: { customEl: element.customEl, htmlEl: element.htmlEl },
-  //     fastElementActionHtmlElement:
-  //       elementFastActionComponent.location.nativeElement,
-  //     position: elPosition?.value ?? 'relative',
-  //   };
-  // }
-
-  // public changeSelectedElPosition() {
-  //   if (!this.selectedElement) return;
-
-  //   const newPosition =
-  //     this.selectedElement.element.htmlEl.style.position === 'absolute'
-  //       ? 'relative'
-  //       : 'absolute';
-
-  //   this._store.dispatch(
-  //     addOrUpdateElementStyleAction({
-  //       elId: this.selectedElement.element.customEl.id,
-  //       styles: [new KeyValuePairModel('position', newPosition)],
-  //     })
-  //   );
-
-  //   this.selectedElement.position = newPosition;
-  // }
-
-  // public setParentElementJustifyContent(direction: string) {
-  //   if (!this._currentSpaceElement) return;
-
-  //   switch (direction) {
-  //     case 'left':
-  //       this._store.dispatch(
-  //         addOrUpdateElementStyleAction({
-  //           elId: this._currentSpaceElement.id,
-  //           styles: [
-  //             { name: 'justify-content', value: 'flex-start' },
-  //             { name: 'display', value: 'flex' },
-  //           ],
-  //         })
-  //       );
-  //       break;
-  //     case 'vertical':
-  //       this._store.dispatch(
-  //         addOrUpdateElementStyleAction({
-  //           elId: this._currentSpaceElement.id,
-  //           styles: [
-  //             { name: 'justify-content', value: 'space-around' },
-  //             { name: 'display', value: 'flex' },
-  //           ],
-  //         })
-  //       );
-  //       break;
-  //     case 'right':
-  //       this._store.dispatch(
-  //         addOrUpdateElementStyleAction({
-  //           elId: this._currentSpaceElement.id,
-  //           styles: [
-  //             { name: 'justify-content', value: 'flex-end' },
-  //             { name: 'display', value: 'flex' },
-  //           ],
-  //         })
-  //       );
-  //       break;
-  //   }
-  // }
-
-  // public addElement() {
-  //   this._store.dispatch(
-  //     addCustomElementAction(
-  //       new NewCustomElement(
-  //         Date.now().toString(),
-  //         'rittry-element',
-  //         [
-  //           { name: 'background-color', value: 'red' },
-  //           { name: 'width', value: '100px' },
-  //           { name: 'height', value: '50px' }
-  //         ]
-  //       )
-  //     )
-  //   );
-  // }
-
-  // public toggleGroupingElements() {
-  //   this._store.dispatch(groupElementsAction());
-  // }
 }

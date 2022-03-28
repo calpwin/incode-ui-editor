@@ -31,4 +31,21 @@ export class MediaHelper {
         throw Error(`Current media type: ${media} not supported`);
     }
   }
+
+  static convertFromIdeMedia(media: IdeMediaType) {
+    switch (media) {
+      case IdeMediaType.desktop:
+        return MediaType.Desktop;
+      case IdeMediaType.laptop:
+        return MediaType.Laptop;
+      case IdeMediaType.phone:
+        return MediaType.Phone;
+      case IdeMediaType.tablet:
+        return MediaType.Tablet;
+      case IdeMediaType.none:
+        return MediaType.None;
+      default:
+        throw Error(`Current media type: ${media} not supported`);
+    }
+  }
 }

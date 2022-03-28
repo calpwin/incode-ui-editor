@@ -1,12 +1,16 @@
 import { createAction, props } from '@ngrx/store';
 import { NewCustomElement } from '../store/custom-element.state';
 import { CelementPositionType } from '../store/celement-position';
-import { KeyValuePairModel } from '../store/element-style';
-
+import { FlexboxCelPosition, KeyValuePairModel } from '../store/element-style';
 
 export const selectCElAction = createAction(
   'Select custom element on dom',
-  props<{ celId: string, parentCelId: string, celTag: string, celStyles: KeyValuePairModel[] }>()
+  props<{
+    celId: string;
+    parentCelId: string;
+    celTag: string;
+    celStyles: KeyValuePairModel[];
+  }>()
 );
 
 export const addCElementAction = createAction(
@@ -27,4 +31,9 @@ export const changeCElementStyleAction = createAction(
 export const changeCElementPositionAction = createAction(
   'Change custom element position',
   props<{ celId: string; position: CelementPositionType }>()
+);
+
+export const changeCElementFlexboxColAction = createAction(
+  'Change custom element flexbox position in cols',
+  props<{ celId: string; position?: FlexboxCelPosition }>()
 );

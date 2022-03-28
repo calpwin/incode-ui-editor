@@ -21,12 +21,37 @@ export class VsCodeService {
 
   connect() {
     this._socket = io('ws://localhost:3653');
+
     this.bindEvents();
+  }
+
+  readAllFromVsCode() {
+    console.log('connect');
+    this.readHtmlFile(MediaType.None);
+    this.readCssFile(MediaType.None);
+    this.readCssFile(MediaType.Desktop);
+    this.readCssFile(MediaType.Laptop);
+    this.readCssFile(MediaType.Tablet);
+    this.readCssFile(MediaType.Phone);
   }
 
   readCssFile(media: MediaType) {
     const cmd = new RitReadWriteCommand(
       RitCommandType.readCss,
+      MediaHelper.convertToIdeMedia(media),
+      RitPathType.root,
+      undefined
+    );
+
+    this._socket.emit(
+      RitCommand.commandCode,
+      JSON.stringify(new RitMessage([cmd]))
+    );
+  }
+
+  readHtmlFile(media: MediaType) {
+    const cmd = new RitReadWriteCommand(
+      RitCommandType.readHtml,
       MediaHelper.convertToIdeMedia(media),
       RitPathType.root,
       undefined
@@ -46,7 +71,7 @@ export class VsCodeService {
   }
 
   writeCssToFile(media: MediaType) {
-    const css = this._htmlEditorService.getCss();
+    const css = this._htmlEditorService.getCss(media);
 
     const cmd = new RitReadWriteCommand(
       RitCommandType.writeCss,
@@ -75,7 +100,10 @@ export class VsCodeService {
     }
 
     if (cmd.code === RitCommandType.readCss) {
-      this._htmlEditorService.parseCss(cmd.content ?? '');
+      this._htmlEditorService.parseCss(
+        cmd.content ?? '',
+        MediaHelper.convertFromIdeMedia(cmd.media)
+      );
     }
   }
 }

@@ -7,17 +7,26 @@
           <button
             mat-icon-button
             class="btn"
-            [color]="currentMedia !== MediaType.Phone ? 'primary' : 'accent'"
-            aria-label="To center"
+            [color]="
+              (currentMediaAsync | async) !== MediaType.Phone
+                ? 'primary'
+                : 'accent'
+            "
+            aria-label="Change media to phone"
             (click)="changeMedia(MediaType.Phone)"
           >
             <mat-icon>phone_iphone</mat-icon>
           </button>
+
           <button
             mat-icon-button
             class="btn"
-            [color]="currentMedia !== MediaType.Tablet ? 'primary' : 'accent'"
-            aria-label="To center"
+            [color]="
+              (currentMediaAsync | async) !== MediaType.Tablet
+                ? 'primary'
+                : 'accent'
+            "
+            aria-label="Change media to tablet"
             (click)="changeMedia(MediaType.Tablet)"
           >
             <mat-icon>tablet_mac</mat-icon>
@@ -25,8 +34,12 @@
           <button
             mat-icon-button
             class="btn"
-            [color]="currentMedia !== MediaType.Laptop ? 'primary' : 'accent'"
-            aria-label="To center"
+            [color]="
+              (currentMediaAsync | async) !== MediaType.Laptop
+                ? 'primary'
+                : 'accent'
+            "
+            aria-label="Change media to laptop"
             (click)="changeMedia(MediaType.Laptop)"
           >
             <mat-icon>laptop_mac</mat-icon>
@@ -34,11 +47,28 @@
           <button
             mat-icon-button
             class="btn"
-            [color]="currentMedia !== MediaType.Desktop ? 'primary' : 'accent'"
-            aria-label="To center"
+            [color]="
+              (currentMediaAsync | async) !== MediaType.Desktop
+                ? 'primary'
+                : 'accent'
+            "
+            aria-label="Change media to desctop"
             (click)="changeMedia(MediaType.Desktop)"
           >
             <mat-icon>desktop_windows</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="btn"
+            [color]="
+              (currentMediaAsync | async) !== MediaType.None
+                ? 'primary'
+                : 'accent'
+            "
+            aria-label="Change media to fullscreen"
+            (click)="changeMedia(MediaType.None)"
+          >
+            <mat-icon>screenshot_monitor</mat-icon>
           </button>
           <!-- </mat-button-toggle-group> -->
         </div>
@@ -59,21 +89,34 @@
       <div class="space" #mainSpace>
         <div class="append-custom-el-to layout-xxl" #appendCustomElement>
           <div class="css-grid-layout">
-            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8 col-sm-1-4"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
-            <div class="grid-col col-xxl-1-12 col-xl-1-8"></div>
-            <div class="grid-col col-xxl-1-12"></div>
-            <div class="grid-col col-xxl-1-12"></div>
-            <div class="grid-col col-xxl-1-12"></div>
-            <div class="grid-col col-xxl-1-12"></div>
+            <div
+              class="grid-col col-xxl-0-1-12 col-xl-0-1-8 col-sm-0-1-4"
+            ></div>
+            <div
+              class="grid-col col-xxl-0-1-12 col-xl-0-1-8 col-sm-0-1-4"
+            ></div>
+            <div
+              class="grid-col col-xxl-0-1-12 col-xl-0-1-8 col-sm-0-1-4"
+            ></div>
+            <div
+              class="grid-col col-xxl-0-1-12 col-xl-0-1-8 col-sm-0-1-4"
+            ></div>
+            <div class="grid-col col-xxl-0-1-12 col-xl-0-1-8"></div>
+            <div class="grid-col col-xxl-0-1-12 col-xl-0-1-8"></div>
+            <div class="grid-col col-xxl-0-1-12 col-xl-0-1-8"></div>
+            <div class="grid-col col-xxl-0-1-12 col-xl-0-1-8"></div>
+            <div class="grid-col col-xxl-0-1-12"></div>
+            <div class="grid-col col-xxl-0-1-12"></div>
+            <div class="grid-col col-xxl-0-1-12"></div>
+            <div class="grid-col col-xxl-0-1-12"></div>
           </div>
 
-          <rittry-layout [class]="AppConstants.getMediaCssClass(currentMedia)"> </rittry-layout>
+          <rittry-layout
+            [class]="
+              AppConstants.getMediaCssClass((currentMediaAsync | async)!)
+            "
+          >
+          </rittry-layout>
 
           <!-- <div class="css-grid-layout custom-grid">
             <div
@@ -96,7 +139,29 @@
           mat-icon-button
           class="btn"
           color="primary"
-          aria-label="To center"
+          aria-label="Arrange elements horizontal"
+          (click)="toggleRootElDirection()"
+        >
+          <mat-icon>{{
+            currentRootCelDirection === "row" ? "more_vert" : "more_horiz"
+          }}</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          [color]="selectedCelFlexboxPosition ? 'accent' : 'primary'"
+          aria-label="To cols layout"
+          (click)="toggleElColsWidth()"
+        >
+          <mat-icon>view_column</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="btn"
+          color="primary"
+          aria-label="Aling layout left"
           (click)="changeRootElLayoutAlign(ElementLayoutAlign.Left)"
         >
           <mat-icon>border_left</mat-icon>
@@ -106,7 +171,7 @@
           mat-icon-button
           class="btn"
           color="primary"
-          aria-label="To center"
+          aria-label="Aling layout horizontal"
           (click)="changeRootElLayoutAlign(ElementLayoutAlign.Horizontal)"
         >
           <mat-icon>border_horizontal</mat-icon>
@@ -164,6 +229,30 @@
           <mat-icon>border_clear</mat-icon>
         </button>
       </div>
+
+      <form class="element-position-in-cols">
+        <mat-form-field class="input margin-left-col" appearance="fill">
+          <input
+            matInput
+            value="0"
+            [disabled]="!(currentSelectedCelAsync | async)?.parentCelId || !selectedCelFlexboxPosition"
+            type="number"
+            [value]="selectedCelFlexboxPosition?.marginLeftCols"
+            (input)="onSelectedCelMarginLeftColsChange($event)"
+          />
+        </mat-form-field>
+
+        <mat-form-field class="input width-in-cols" appearance="fill">
+          <input
+            matInput
+            value="0"
+            [disabled]="!(currentSelectedCelAsync | async)?.parentCelId || !selectedCelFlexboxPosition"
+            type="number"
+            [value]="selectedCelFlexboxPosition?.widthCols"
+            (input)="onSelectedCelWidthColsChange($event)"
+          />
+        </mat-form-field>
+      </form>
     </div>
   </div>
 

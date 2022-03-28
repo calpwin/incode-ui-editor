@@ -1,5 +1,10 @@
+import { ElementStyles } from './../store/element-style';
+import { CelementPosition } from './../store/celement-position';
 import { CustomElement } from './../store/custom-element.state';
-import { selectCElAction } from './../actions/celement.actions';
+import {
+  changeCElementFlexboxColAction,
+  selectCElAction,
+} from './../actions/celement.actions';
 import { createReducer, on } from '@ngrx/store';
 import { initialState } from '../store/initial.state';
 import {
@@ -18,7 +23,12 @@ import {
   changeHtmlAction,
   saveCodeAction,
 } from '../actions/code-editor.actions';
-import { KeyValuePairModel, MediaElementStyles } from '../store/element-style';
+import {
+  FlexboxCelPosition,
+  KeyValuePairModel,
+  MediaElementStyles,
+} from '../store/element-style';
+import { MediaType } from '../store/space-media';
 
 export const reducers = createReducer(
   initialState,
@@ -62,6 +72,8 @@ export const reducers = createReducer(
 
     let celements = state.celements;
 
+    // console.log(`${cel.id} : ${styles?.map(x => `${x.name}:${x.value}`)}`);
+
     if (stylesChanged) {
       cel = { ...cel };
       cel.mediaStyles.set(state.currentMedia, styles);
@@ -76,6 +88,28 @@ export const reducers = createReducer(
   }),
   on(changeCElementPositionAction, (state, prop) => {
     return { ...state };
+  }),
+  on(changeCElementFlexboxColAction, (state, prop) => {
+    let cel = state.celements.find((x) => x.id === prop.celId)!;
+    const styles = cel.mediaStyles.getStyles(state.currentMedia);
+    let celements = state.celements;
+
+    cel = { ...cel };
+    const elStyles: ElementStyles = [...styles];
+    elStyles.flexboxPosition = prop.position
+    ? new FlexboxCelPosition(
+        prop.position.marginLeftCols,
+        prop.position.widthCols
+      )
+    : undefined;
+    cel.mediaStyles.set(state.currentMedia, elStyles);
+
+    celements = [...celements.filter((x) => x.id !== cel.id), cel];
+
+    return {
+      ...state,
+      celements,
+    };
   }),
   on(addCElementAction, (state, prop) => {
     const findCel = state.celements.find((x) => x.id === prop.cel.id);

@@ -1,31 +1,37 @@
 // @use '@angular/material' as mat;
-@import 'scss-reset/_reset.scss';
+@import "scss-reset/_reset.scss";
 
-@import '~@angular/material/theming';
+@import "~@angular/material/theming";
 @include mat-core();
 
 $my-app-primary: mat-palette($mat-blue-grey);
-$my-app-accent:  mat-palette($mat-pink, 500, 900, A100);
-$my-app-warn:    mat-palette($mat-deep-orange);
+$my-app-accent: mat-palette($mat-pink, 500, 900, A100);
+$my-app-warn: mat-palette($mat-deep-orange);
 $my-app-theme: mat-light-theme($my-app-primary, $my-app-accent, $my-app-warn);
 @include angular-material-theme($my-app-theme);
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
 
 .mat-icon {
   font-size: 20px;
 }
 
 .custom-element {
-
   &.selected {
-    border:  3px dashed #39465f73 !important;
+    border: 3px dashed #39465f73 !important;
   }
 
   &.editable-group {
@@ -33,10 +39,74 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   }
 }
 
-
 .moveable-control {
   --moveable-color: #7887d1;
 
   width: 10px !important;
   height: 10px !important;
 }
+
+//#region Col layout
+
+@mixin layout-col($colsNum, $classPrefix, $columnMerginLeft: 2%) {
+  $marginNum: $colsNum - 1;
+
+  @for $i from 1 through $colsNum {
+    @for $m from 0 to $marginNum {
+      div.#{$classPrefix}-#{$m}-#{$i}-#{$colsNum},
+      div.rittry-element.#{$classPrefix}-#{$m}-#{$i}-#{$colsNum} {
+        display: block;
+
+        $columnWidth: 100% /
+          $colsNum -
+          ($columnMerginLeft - $columnMerginLeft / $colsNum);
+        $columnTotalWidth: $columnWidth + $columnMerginLeft;
+        $columnsWidth: $columnWidth + ($i - 1) * $columnTotalWidth;
+
+        width: calc(#{$columnsWidth});
+        margin-left: $columnMerginLeft + $m * $columnTotalWidth;
+
+        &:first-child {
+          margin-left: 0 + $m * $columnTotalWidth;
+        }
+      }
+    }
+  }
+}
+
+.css-grid-layout {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  justify-content: center;
+  flex-direction: row;
+  z-index: -100;
+
+  div {
+    display: none;
+    height: 100%;
+    background-color: darkgrey;
+  }
+}
+
+.layout-sm,
+.layout-sm #root-element {
+  @include layout-col(4, 'col-sm');
+}
+
+.layout-xl,
+.layout-xl #root-element {
+  @include layout-col(8, 'col-xl');
+}
+
+.layout-xxl,
+.layout-xxl #root-element {
+  @include layout-col(12, 'col-xxl');
+}
+
+//#endregion

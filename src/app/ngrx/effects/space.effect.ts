@@ -1,3 +1,4 @@
+import { celementsSelector } from './../selectors/celement.selectors';
 import { VsCodeService } from 'src/app/services/vscode.service';
 import {
   changeMediaAction,
@@ -37,11 +38,14 @@ export class SpaceEffects {
     () =>
       this.actions$.pipe(
         ofType(changeMediaAction),
-        switchMap(({ fromMedia, toMedia }) => {
-          this._codeEditorService.syncEditorStyles(fromMedia);
+        withLatestFrom(this.store$.select(celementsSelector)),
+        switchMap(([{ fromMedia, toMedia }, cels]) => {
 
-          this._vsCodeService.writeCssToFile(fromMedia);
-          this._vsCodeService.readCssFile(toMedia);
+          cels.forEach(cel => {
+            this._htmlCElementService.setStyles(cel.id, cel.mediaStyles.getStyles(toMedia), false);
+            this._htmlCElementService.removeMovaeble(cel.id);
+          });
+
           return [];
         })
       ),

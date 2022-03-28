@@ -9,7 +9,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { StoreModule } from '@ngrx/store';
 import { reducers } from './ngrx/reducers/reducer';
 import { LayoutComponent } from './components/rittry-layout/layout.component';
@@ -20,7 +22,12 @@ import { CodeEditorEffects } from './ngrx/effects/code-editor.effect';
 import { SpaceEffects } from './ngrx/effects/space.effect';
 
 @NgModule({
-  declarations: [AppComponent, SpaceComponent, LayoutComponent, CElementFastActionComponent],
+  declarations: [
+    AppComponent,
+    SpaceComponent,
+    LayoutComponent,
+    CElementFastActionComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -28,11 +35,10 @@ import { SpaceEffects } from './ngrx/effects/space.effect';
     MatIconModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatFormFieldModule,
+    MatInputModule,
     StoreModule.forRoot({}),
-    StoreModule.forFeature(
-      AppConstants.uiEditorFeatureName,
-      reducers
-    ),
+    StoreModule.forFeature(AppConstants.uiEditorFeatureName, reducers),
     EffectsModule.forRoot([CElementEffects, CodeEditorEffects, SpaceEffects]),
   ],
   providers: [],

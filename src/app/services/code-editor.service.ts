@@ -1,6 +1,3 @@
-import { celementsSelector } from './../ngrx/selectors/celement.selectors';
-import { CustomElement } from './../ngrx/store/custom-element.state';
-import { currentMediaSelector } from './../ngrx/selectors/space.selectors';
 import { MediaType } from './../ngrx/store/space-media';
 import { AppConstants } from './app.constant';
 import { AppState } from '../ngrx/store/initial.state';
@@ -21,12 +18,13 @@ import { KeyValuePairModel } from '../ngrx/store/element-style';
 })
 export class CodeEditorService {
   private _doc!: DomDocument;
-  private _css!: csstree.CssNode;
+  // private _css!: csstree.CssNode;
+  private readonly _cssMap = new Map<MediaType, csstree.CssNode>();
 
   private readonly _domCelIds = new Set<string>();
 
-  private _celements = new Map<string, CustomElement>();
-  private _currentMedia = MediaType.None;
+  // private _celements = new Map<string, CustomElement>();
+  // private _currentMedia = MediaType.None;
 
   constructor(
     @Inject(DOCUMENT) private readonly _document: Document,
@@ -37,24 +35,25 @@ export class CodeEditorService {
   }
 
   bindServiceEvents() {
-    this._store
-      .select(currentMediaSelector)
-      .subscribe((media) => (this._currentMedia = media));
+    // this._store
+    //   .select(currentMediaSelector)
+    //   .subscribe((media) => (this._currentMedia = media));
 
-    this._store.select(celementsSelector).subscribe((cels) => {
-      const map = new Map<string, CustomElement>();
-      cels.forEach((cel) => {
-        map.set(cel.id, cel);
-      });
-      this._celements = map;
-    });
+    // this._store.select(celementsSelector).subscribe((cels) => {
+    //   const map = new Map<string, CustomElement>();
+    //   cels.forEach((cel) => {
+    //     map.set(cel.id, cel);
+    //   });
+    //   this._celements = map;
+    // });
   }
 
   syncEditorStyles(media: MediaType) {
     const updatedHelms = this._htmlCElementService.getElements(false);
 
     updatedHelms.forEach((helm) => {
-      this.addCssRules(helm.cel.id, helm.cel.mediaStyles.getStyles(media));
+      // console.log(`${helm.cel.id} : ${helm.cel.mediaStyles.get(MediaType.None)?.map(x => `${x.name}:${x.value}`)}`);
+      this.addCssRules(helm.cel.id, helm.cel.mediaStyles.getStyles(media), media);
     });
   }
 
@@ -110,18 +109,22 @@ export class CodeEditorService {
 
   //#region Css
 
-  parseCss(css: string) {
-    this._css = csstree.parse(css);
+  parseCss(css: string, media: MediaType) {
+    const cssTree = csstree.parse(css);
+    this._cssMap.set(media, cssTree);
   }
 
-  addCssRules(celId: string, rules: KeyValuePairModel[]) {
+  addCssRules(celId: string, rules: KeyValuePairModel[], media: MediaType) {
     // const onlyNewRules = this._domCelIds.has(celId)
     //   ? this.syncRules(celId, rules)
     //   : rules;
 
     let foundIdSelector: csstree.CssNode | undefined = undefined;
 
-    csstree.walk(this._css, {
+    // Media should be, as it refresh for all medias at app start
+    const cssTree = this._cssMap.get(media)!;
+
+    csstree.walk(cssTree, {
       visit: 'Rule',
       leave(node, item, list) {
         if (foundIdSelector) return;
@@ -160,10 +163,10 @@ export class CodeEditorService {
       },
     });
 
-    if (!foundIdSelector && this._css.type === 'StyleSheet') {
+    if (!foundIdSelector && cssTree.type === 'StyleSheet') {
       const addMediaClass =
-        this._currentMedia !== MediaType.None
-          ? '.' + AppConstants.getMediaCssClass(this._currentMedia) + ' '
+        media !== MediaType.None
+          ? '.' + AppConstants.getMediaCssClass(media) + ' '
           : '';
 
       const addRootElementClass =
@@ -171,7 +174,7 @@ export class CodeEditorService {
           ? '#' + AppConstants.HtmlRootSpaceElementId + ' '
           : '';
 
-      const blockNode = this._css.children.createItem({
+      const blockNode = cssTree.children.createItem({
         type: 'Rule',
         block: { type: 'Block', children: new csstree.List<csstree.Block>() },
         prelude: {
@@ -185,12 +188,13 @@ export class CodeEditorService {
         value: this.rulesToCss(rules),
       });
 
-      this._css.children.append(blockNode);
+      cssTree.children.append(blockNode);
     }
   }
 
-  getCss() {
-    return csstree.generate(this._css);
+  getCss(media: MediaType) {
+    const cssTree = this._cssMap.get(media)!;
+    return csstree.generate(cssTree);
   }
 
   private rulesToCss(rules: KeyValuePairModel[]) {

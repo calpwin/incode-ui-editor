@@ -3,6 +3,7 @@ import { CodeEditorService } from './../../services/code-editor.service';
 import { AppState } from './../store/initial.state';
 import {
   addCElementAction,
+  changeCElementFlexboxColAction,
   changeCElementPositionAction,
   changeCElementStyleAction,
   removeCElementAction,
@@ -48,6 +49,22 @@ export class CElementEffects {
     )
   );
 
+  changeCElementFlexboxColAction$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(changeCElementFlexboxColAction),
+        switchMap(async ({ celId, position }) => {
+          await this._htmlCElementService.updateFlexboxPosition(
+            celId,
+            position
+          );
+
+          return [];
+        })
+      ),
+    { dispatch: false }
+  );
+
   addCElement$ = createEffect(() =>
     this.actions$.pipe(
       ofType(addCElementAction),
@@ -76,16 +93,17 @@ export class CElementEffects {
     )
   );
 
-  selectCElAction$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(selectCElAction),
-      switchMap(({ celId }) => {
-        this._htmlCElementService.onCElementSelect(celId);
+  selectCElAction$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(selectCElAction),
+        switchMap(({ celId }) => {
+          this._htmlCElementService.onCElementSelect(celId);
 
-        return []
-      })
-    ),
-    {dispatch: false}
+          return [];
+        })
+      ),
+    { dispatch: false }
   );
 
   constructor(

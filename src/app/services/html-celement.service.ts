@@ -1,3 +1,4 @@
+import { currentMediaSelector } from './../ngrx/selectors/space.selectors';
 import { MediaType } from './../ngrx/store/space-media';
 import { celementsSelector } from './../ngrx/selectors/celement.selectors';
 import { CElementFastActionComponent } from './../components/celement-fast-action/celement-fast-action.component';
@@ -19,7 +20,10 @@ import { HtmlCElement } from './models/html-celement';
 import { selectCElAction } from '../ngrx/actions/celement.actions';
 import { firstValueFrom, take } from 'rxjs';
 import { uiEditorSpaceFeatureSelector } from '../ngrx/selectors/space.selectors';
-import { KeyValuePairModel } from '../ngrx/store/element-style';
+import {
+  FlexboxCelPosition,
+  KeyValuePairModel,
+} from '../ngrx/store/element-style';
 
 @Injectable({
   providedIn: 'root',
@@ -36,6 +40,12 @@ export class HtmlCElementService {
   private readonly _htmlEls = new Map<string, HtmlCElement>();
 
   public spaceCElViewConRef!: ViewContainerRef;
+
+  get currentMediaAsync() {
+    return firstValueFrom(
+      this._store.pipe(select(currentMediaSelector), take(1))
+    );
+  }
 
   constructor(
     @Inject(DOCUMENT) private _document: Document,
@@ -64,7 +74,9 @@ export class HtmlCElementService {
       AppConstants.HtmlRootSpaceElementId
     )!;
 
-    const state = await firstValueFrom(this._store.pipe(select(uiEditorSpaceFeatureSelector), take(1)));
+    const state = await firstValueFrom(
+      this._store.pipe(select(uiEditorSpaceFeatureSelector), take(1))
+    );
     const cel = state.celements.find(
       (x) => x.id === AppConstants.HtmlRootSpaceElementId
     )!;
@@ -87,11 +99,16 @@ export class HtmlCElementService {
     }
   }
 
-  setStyles(celId: string, styles: KeyValuePairModel[]) {
+  /**
+   *
+   * @param celId
+   * @param styles styles to set
+   * @param saveCurrent true -> save current elements styles
+   */
+  setStyles(celId: string, styles: KeyValuePairModel[], saveCurrent = true) {
     const helm = this._htmlEls.get(celId)!;
-    // KeyValuePairModel.override(helm.cel.styles, styles);
 
-    // const htmlCel = this._document.getElementById(celId);
+    if (!saveCurrent) this._renderer.removeAttribute(helm.htmlEl, 'style');
 
     styles.forEach((style) => {
       this._renderer.setStyle(helm.htmlEl, style.name, style.value);
@@ -102,17 +119,58 @@ export class HtmlCElementService {
    * Get element style
    * @param withDom if true and style not bind to cel, find in current dom tree
    */
-  getStyle(media: MediaType, celId: string, styleName: string, withDom = false) {
+  getStyle(
+    media: MediaType,
+    celId: string,
+    styleName: string,
+    withDom = false
+  ) {
     const helm = this._htmlEls.get(celId);
 
     if (!helm) return undefined;
 
-    let style = helm.cel.mediaStyles.get(media)!.find((x) => x.name === styleName);
+    let style = helm.cel.mediaStyles
+      .get(media)!
+      .find((x) => x.name === styleName);
 
     if (style || !withDom) return style?.value;
 
     const styles = this._window.getComputedStyle(helm.htmlEl);
     return styles.getPropertyValue(styleName);
+  }
+
+  async updateFlexboxPosition(celId: string, position?: FlexboxCelPosition) {
+    const helm = this._htmlEls.get(celId)!;
+    const currentMedia = await this.currentMediaAsync;
+    const flexboxClass = HtmlCElementService.getFlexboxColClass(currentMedia);
+
+    helm.htmlEl.classList.forEach((cls) => {
+      if (!cls.startsWith(flexboxClass.prefix)) return;
+
+      this._renderer.removeClass(helm.htmlEl, cls);
+    });
+
+    if (position) {
+      this._renderer.addClass(
+        helm.htmlEl,
+        `${flexboxClass.prefix}${position.marginLeftCols}-${position.widthCols}-${flexboxClass.cols}`
+      );
+    }
+  }
+
+  static getFlexboxColClass(media: MediaType) {
+    switch (media) {
+      case MediaType.None:
+      case MediaType.Desktop:
+      case MediaType.Laptop:
+        return { prefix: 'col-xxl-', cols: 12 };
+      case MediaType.Tablet:
+        return { prefix: 'col-xl-', cols: 8 };
+      case MediaType.Phone:
+        return { prefix: 'col-sm-', cols: 4 };
+      default:
+        throw Error(`MediaType: ${media} not suppported`);
+    }
   }
 
   addCElement(cel: CustomElement, appendToId: string) {
@@ -167,8 +225,7 @@ export class HtmlCElementService {
 
     if (!helm || !movaeble) return;
 
-    movaeble.destroy();
-    helm.moveable = undefined;
+    this.removeSelection(helm);
   }
 
   onCElementSelect(celId: string) {
@@ -189,10 +246,7 @@ export class HtmlCElementService {
     }
 
     this._htmlEls.forEach((x) => {
-      x.moveable?.destroy();
-      x.moveable = undefined;
-      x.fastAtionCompRef?.destroy();
-      x.fastAtionCompRef = undefined;
+      this.removeSelection(x);
     });
 
     this._store.dispatch(
@@ -267,5 +321,12 @@ export class HtmlCElementService {
         celStyles: [],
       })
     );
+  }
+
+  private removeSelection(helm: HtmlCElement) {
+    helm.moveable?.destroy();
+    helm.moveable = undefined;
+    helm.fastAtionCompRef?.destroy();
+    helm.fastAtionCompRef = undefined;
   }
 }
