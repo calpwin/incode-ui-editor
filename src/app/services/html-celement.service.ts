@@ -16,7 +16,10 @@ import { AppConstants } from './app.constant';
 import { HtmlMovableElementService } from './html-movable-celement.service';
 import { CustomElement } from '../ngrx/store/custom-element.state';
 import { select, Store } from '@ngrx/store';
-import { HtmlCElement } from './models/html-celement';
+import {
+  HtmlCElement,
+  HtmlCelementMap as HtmlCElementMap,
+} from './models/html-celement';
 import { selectCElAction } from '../ngrx/actions/celement.actions';
 import { firstValueFrom, take } from 'rxjs';
 import { uiEditorSpaceFeatureSelector } from '../ngrx/selectors/space.selectors';
@@ -37,7 +40,7 @@ export class HtmlCElementService {
 
   // If clicked html element will be in this map,
   // then can be removed by "close element" ui action
-  private readonly _htmlEls = new Map<string, HtmlCElement>();
+  private readonly _hels: HtmlCElementMap;
 
   public spaceCElViewConRef!: ViewContainerRef;
 
@@ -53,18 +56,19 @@ export class HtmlCElementService {
     private readonly _htmlMovableElementService: HtmlMovableElementService,
     private readonly _store: Store<AppState>
   ) {
+    this._hels = new HtmlCElementMap(_document, _store);
     this._renderer = _rendererFactory.createRenderer(null, null);
     this._window = _document.defaultView!;
   }
 
-  async initialize() {
+  async initializeAsync() {
     this._store.select(celementsSelector).subscribe((cels) => {
       const map = new Map<string, CustomElement>();
       cels.forEach((cel) => {
         map.set(cel.id, cel);
 
-        if (this._htmlEls.has(cel.id)) {
-          this._htmlEls.get(cel.id)!.cel = cel;
+        if (this._hels.has(cel.id)) {
+          this._hels.get(cel.id)!.cel = cel;
         }
       });
       this._celements = map;
@@ -81,9 +85,9 @@ export class HtmlCElementService {
       (x) => x.id === AppConstants.HtmlRootSpaceElementId
     )!;
 
-    const hel: HtmlCElement = { cel, htmlEl };
+    const hel: HtmlCElement = { cel, htmlEl, flexboxLayout: 'relative' };
 
-    this._htmlEls.set(AppConstants.HtmlRootSpaceElementId, hel);
+    this._hels.set(AppConstants.HtmlRootSpaceElementId, hel);
   }
 
   bindEventsToCElements() {
@@ -105,13 +109,17 @@ export class HtmlCElementService {
    * @param styles styles to set
    * @param saveCurrent true -> save current elements styles
    */
-  setStyles(celId: string, styles: KeyValuePairModel[], saveCurrent = true) {
-    const helm = this._htmlEls.get(celId)!;
+  async setStylesAsync(
+    celId: string,
+    styles: KeyValuePairModel[],
+    saveCurrent = true
+  ) {
+    const helm = await this._hels.getHelmAsync(celId);
 
-    if (!saveCurrent) this._renderer.removeAttribute(helm.htmlEl, 'style');
+    if (!saveCurrent) this._renderer.removeAttribute(helm!.htmlEl, 'style');
 
     styles.forEach((style) => {
-      this._renderer.setStyle(helm.htmlEl, style.name, style.value);
+      this._renderer.setStyle(helm!.htmlEl, style.name, style.value);
     });
   }
 
@@ -119,13 +127,13 @@ export class HtmlCElementService {
    * Get element style
    * @param withDom if true and style not bind to cel, find in current dom tree
    */
-  getStyle(
+  async getStyleAsync(
     media: MediaType,
     celId: string,
     styleName: string,
     withDom = false
   ) {
-    const helm = this._htmlEls.get(celId);
+    const helm = await this._hels.getHelmAsync(celId);
 
     if (!helm) return undefined;
 
@@ -139,8 +147,11 @@ export class HtmlCElementService {
     return styles.getPropertyValue(styleName);
   }
 
-  async updateFlexboxPosition(celId: string, position?: FlexboxCelPosition) {
-    const helm = this._htmlEls.get(celId)!;
+  async updateFlexboxPositionAsync(
+    celId: string,
+    position?: FlexboxCelPosition
+  ) {
+    const helm = (await this._hels.getHelmAsync(celId))!;
     const currentMedia = await this.currentMediaAsync;
     const flexboxClass = HtmlCElementService.getFlexboxColClass(currentMedia);
 
@@ -174,7 +185,7 @@ export class HtmlCElementService {
   }
 
   addCElement(cel: CustomElement, appendToId: string) {
-    if (this._htmlEls.has(cel.id)) {
+    if (this._hels.has(cel.id)) {
       console.log(`Can not add element, element with ${cel.id} already exist`);
       return;
     }
@@ -189,18 +200,19 @@ export class HtmlCElementService {
 
     this._renderer.appendChild(appendToHtmlEl, htmlEl);
 
-    this._htmlEls.set(cel.id, {
+    this._hels.set(cel.id, {
       cel,
       htmlEl,
+      flexboxLayout: 'relative'
     });
   }
 
-  getElement(celId: string) {
-    return this._htmlEls.get(celId);
+  async getElementAsync(celId: string) {
+    return await this._hels.getHelmAsync(celId);
   }
 
   getElements(exceptRoot = true) {
-    let helms = Array.from(this._htmlEls);
+    let helms = Array.from(this._hels);
 
     if (exceptRoot)
       helms = helms.filter((x) => x[0] !== AppConstants.HtmlRootSpaceElementId);
@@ -208,19 +220,19 @@ export class HtmlCElementService {
     return helms.map((x) => x[1]);
   }
 
-  removeCElement(celId: string) {
-    const hel = this._htmlEls.get(celId);
+  async removeCElementAsync(celId: string) {
+    const hel = await this._hels.getHelmAsync(celId);
 
     if (!hel) return;
 
     hel.moveable?.destroy();
     hel.fastAtionCompRef?.destroy();
     hel.htmlEl.remove();
-    this._htmlEls.delete(celId);
+    this._hels.delete(celId);
   }
 
-  removeMovaeble(celid: string) {
-    const helm = this._htmlEls.get(celid);
+  async removeMovaebleAsync(celid: string) {
+    const helm = await this._hels.getHelmAsync(celid);
     const movaeble = helm?.moveable;
 
     if (!helm || !movaeble) return;
@@ -228,24 +240,33 @@ export class HtmlCElementService {
     this.removeSelection(helm);
   }
 
-  onCElementSelect(celId: string) {
-    let hel = this._htmlEls.get(celId);
-    const cel = this._celements.get(celId)!;
-    const htmlEl = this._document.getElementById(celId);
+  async onCElementSelectAsync(celId: string) {
+    let hel = await this._hels.getHelmAsync(celId);
+    // this._hels.set(celId, hel!);
 
-    if (!htmlEl) {
+    console.log(hel === this._hels.get(celId));
+
+    if (!hel) {
       console.log(`Can not find html element with id ${celId}`);
       return;
     }
 
-    let parentHtmlEl = this._document.getElementById(cel.parentCelId);
+    // const cel = this._celements.get(celId)!;
+    // const htmlEl = this._document.getElementById(celId);
 
-    if (!hel) {
-      hel = { cel, htmlEl };
-      this._htmlEls.set(celId, hel);
-    }
+    // if (!htmlEl) {
+    //   console.log(`Can not find html element with id ${celId}`);
+    //   return;
+    // }
 
-    this._htmlEls.forEach((x) => {
+    let parentHtmlEl = this._document.getElementById(hel.cel.parentCelId);
+
+    // if (!hel) {
+    //   hel = { cel, htmlEl };
+    //   this._htmlEls.set(celId, hel);
+    // }
+
+    this._hels.forEach((x) => {
       this.removeSelection(x);
     });
 
@@ -261,9 +282,9 @@ export class HtmlCElementService {
 
     const moveable = this._htmlMovableElementService.makeMovable(
       parentHtmlEl!,
-      htmlEl,
+      hel.htmlEl,
       {
-        draggable: window.getComputedStyle(htmlEl).position === 'absolute',
+        draggable: window.getComputedStyle(hel.htmlEl).position === 'absolute',
       }
     );
 
@@ -275,7 +296,7 @@ export class HtmlCElementService {
     fastActionCompRef.instance.celId = celId;
 
     this._renderer.appendChild(
-      htmlEl,
+      hel.htmlEl,
       fastActionCompRef.location.nativeElement
     );
 
@@ -313,12 +334,28 @@ export class HtmlCElementService {
       }
     }
 
+    const children: { celId: string; tagName: string }[] = [];
+    for (var i = 0; i < htmlEl.children.length; i++) {
+      const hel = htmlEl.children[i];
+
+      if (!hel.classList.contains(AppConstants.HtmlElementClassName)) continue;
+
+      const celId = hel.getAttribute('id');
+      if (!celId) {
+        console.log(`${hel} element without id not supported will be skiped`);
+        return;
+      }
+
+      children.push({ celId, tagName: hel.tagName });
+    }
+
     this._store.dispatch(
       selectCElAction({
         celId,
         parentCelId: parentCelId ?? 'it-is-root-el', //TODO maybe remake
-        celTag: (e.currentTarget as HTMLElement).tagName,
+        celTag: htmlEl.tagName,
         celStyles: [],
+        children,
       })
     );
   }

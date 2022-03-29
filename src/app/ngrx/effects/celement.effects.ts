@@ -13,7 +13,7 @@ import { HtmlCElementService } from '../../services/html-celement.service';
 import { Injectable } from '@angular/core';
 import { createEffect, ofType, Actions } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { withLatestFrom, switchMap } from 'rxjs';
+import { withLatestFrom, switchMap, map, from, of, forkJoin } from 'rxjs';
 import { currentRootElSelector } from '../selectors/space.selectors';
 import {
   changeCssAction,
@@ -25,27 +25,26 @@ export class CElementEffects {
   changeCElementStyle$ = createEffect(() =>
     this.actions$.pipe(
       ofType(changeCElementStyleAction),
-      switchMap(({ celId: celId, styles }) => {
-        this._htmlCElementService.setStyles(celId, [...styles]);
-
-        return [changeCssAction()];
-      })
+      switchMap(({ celId: celId, styles }) =>
+        this._htmlCElementService.setStylesAsync(celId, [...styles])
+      ),
+      map((_) => changeCssAction())
     )
   );
 
   changeCElementPosition$ = createEffect(() =>
     this.actions$.pipe(
       ofType(changeCElementPositionAction),
-      switchMap(({ celId: celId, position }) => {
-        this._htmlCElementService.removeMovaeble(celId);
-
-        return [
-          changeCElementStyleAction({
-            celId,
-            styles: CelementPosition.stylesFromPositionType(position),
-          }),
-        ];
-      })
+      switchMap(({ celId: celId, position }) =>
+        from(this._htmlCElementService.removeMovaebleAsync(celId)).pipe(
+          map((_) =>
+            changeCElementStyleAction({
+              celId,
+              styles: CelementPosition.stylesFromPositionType(position),
+            })
+          )
+        )
+      )
     )
   );
 
@@ -53,14 +52,9 @@ export class CElementEffects {
     () =>
       this.actions$.pipe(
         ofType(changeCElementFlexboxColAction),
-        switchMap(async ({ celId, position }) => {
-          await this._htmlCElementService.updateFlexboxPosition(
-            celId,
-            position
-          );
-
-          return [];
-        })
+        switchMap(({ celId, position }) =>
+          this._htmlCElementService.updateFlexboxPositionAsync(celId, position)
+        )
       ),
     { dispatch: false }
   );
@@ -69,27 +63,25 @@ export class CElementEffects {
     this.actions$.pipe(
       ofType(addCElementAction),
       withLatestFrom(this.store$.select(currentRootElSelector)),
-      switchMap(([{ cel }, spaceElId]) => {
-        this._htmlCElementService.addCElement(cel, spaceElId);
-        this._htmlCElementService.bindEventsToCElements();
-
-        this._codeEditorService.addElToDom(cel, spaceElId);
-
-        return [changeHtmlAction()];
-      })
+      switchMap(([{ cel }, spaceElId]) =>
+        of(
+          this._htmlCElementService.addCElement(cel, spaceElId),
+          this._htmlCElementService.bindEventsToCElements(),
+          this._codeEditorService.addElToDom(cel, spaceElId)
+        ).pipe(map((_) => changeHtmlAction()))
+      )
     )
   );
 
   removeCElement$ = createEffect(() =>
     this.actions$.pipe(
       ofType(removeCElementAction),
-      switchMap(({ celId }) => {
-        this._htmlCElementService.removeCElement(celId);
-
-        this._codeEditorService.removeElFromDom(celId);
-
-        return [changeHtmlAction()];
-      })
+      switchMap(({ celId }) =>
+        forkJoin([
+          this._htmlCElementService.removeCElementAsync(celId),
+          of(this._codeEditorService.removeElFromDom(celId)),
+        ]).pipe(map((x) => changeHtmlAction()))
+      )
     )
   );
 
@@ -97,11 +89,7 @@ export class CElementEffects {
     () =>
       this.actions$.pipe(
         ofType(selectCElAction),
-        switchMap(({ celId }) => {
-          this._htmlCElementService.onCElementSelect(celId);
-
-          return [];
-        })
+        switchMap(({ celId }) => this._htmlCElementService.onCElementSelectAsync(celId))
       ),
     { dispatch: false }
   );

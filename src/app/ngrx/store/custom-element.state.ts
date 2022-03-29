@@ -4,6 +4,7 @@ import { MediaType } from './space-media';
 export class CustomElement {
   public readonly mediaStyles!: MediaElementStyles;
   public parentCelId!: string;
+  public childrenIds: string[] = [];
 
   constructor(public id: string, public tagName: string) {
     this.mediaStyles = new MediaElementStyles();

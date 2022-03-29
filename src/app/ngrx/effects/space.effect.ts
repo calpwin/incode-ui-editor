@@ -41,9 +41,9 @@ export class SpaceEffects {
         withLatestFrom(this.store$.select(celementsSelector)),
         switchMap(([{ fromMedia, toMedia }, cels]) => {
 
-          cels.forEach(cel => {
-            this._htmlCElementService.setStyles(cel.id, cel.mediaStyles.getStyles(toMedia), false);
-            this._htmlCElementService.removeMovaeble(cel.id);
+          cels.forEach(async cel => {
+            await this._htmlCElementService.setStylesAsync(cel.id, cel.mediaStyles.getStyles(toMedia), false);
+            await this._htmlCElementService.removeMovaebleAsync(cel.id);
           });
 
           return [];

@@ -1,3 +1,4 @@
+import { AppConstants } from './../../services/app.constant';
 import { ElementStyles } from './../store/element-style';
 import { CelementPosition } from './../store/celement-position';
 import { CustomElement } from './../store/custom-element.state';
@@ -45,13 +46,28 @@ export const reducers = createReducer(
   }),
   on(selectCElAction, (state, prop) => {
     const findCel = state.celements.find((x) => x.id === prop.celId);
-    const celements = [...state.celements];
+    let celements = [...state.celements];
 
     if (!findCel) {
       const cel = new CustomElement(prop.celId, prop.celTag);
       cel.mediaStyles.set(state.currentMedia, prop.celStyles);
       cel.parentCelId = prop.parentCelId;
       celements.push(cel);
+
+      if (cel.id !== AppConstants.HtmlRootSpaceElementId) {
+        let parentCel = state.celements.find((x) => x.id === prop.parentCelId)!;
+        parentCel = { ...parentCel };
+        parentCel.childrenIds = [...parentCel.childrenIds, cel.id];
+        celements = setCel(celements, parentCel);
+      }
+
+      prop.children.forEach((x) => {
+        const chCel = new CustomElement(x.celId, x.tagName);
+        chCel.parentCelId = cel.id;
+        celements.push(chCel);
+
+        cel.childrenIds.push(chCel.id);
+      });
     }
 
     return {
@@ -97,11 +113,11 @@ export const reducers = createReducer(
     cel = { ...cel };
     const elStyles: ElementStyles = [...styles];
     elStyles.flexboxPosition = prop.position
-    ? new FlexboxCelPosition(
-        prop.position.marginLeftCols,
-        prop.position.widthCols
-      )
-    : undefined;
+      ? new FlexboxCelPosition(
+          prop.position.marginLeftCols,
+          prop.position.widthCols
+        )
+      : undefined;
     cel.mediaStyles.set(state.currentMedia, elStyles);
 
     celements = [...celements.filter((x) => x.id !== cel.id), cel];
@@ -113,22 +129,35 @@ export const reducers = createReducer(
   }),
   on(addCElementAction, (state, prop) => {
     const findCel = state.celements.find((x) => x.id === prop.cel.id);
-    const celements = [...state.celements];
+    let celements = [...state.celements];
 
     if (!findCel) {
       const cel = new CustomElement(prop.cel.id, prop.cel.tagName);
       MediaElementStyles.override(prop.cel.mediaStyles, cel.mediaStyles);
       cel.parentCelId = state.currentRootCElementId;
       celements.push(cel);
+
+      let parentCel = state.celements.find(
+        (x) => x.id === prop.cel.parentCelId
+      )!;
+      parentCel = { ...parentCel };
+      parentCel.childrenIds.push(cel.id);
+      celements = setCel(celements, parentCel);
     }
 
     return { ...state, celements };
   }),
   on(removeCElementAction, (state, prop) => {
-    return {
-      ...state,
-      celements: state.celements.filter((x) => x.id !== prop.celId),
-    };
+    const cel = state.celements.find((x) => x.id === prop.celId);
+    let celements = state.celements.filter((x) => x.id !== prop.celId);
+
+    if (cel?.parentCelId) {
+      const parentCel = state.celements.find((x) => x.id === cel.parentCelId)!;
+      tryRemoveFromArray(parentCel.childrenIds, parentCel.id);
+      celements = setCel(state.celements, parentCel);
+    }
+
+    return { ...state, celements };
   }),
   //#endregion
 
@@ -144,3 +173,24 @@ export const reducers = createReducer(
   })
   //#endregion
 );
+
+function setCel(cels: CustomElement[], toUpdatECel: CustomElement) {
+  let updatedCels = [...cels];
+  updatedCels = updatedCels.filter((x) => x.id !== toUpdatECel.id);
+  updatedCels.push(toUpdatECel);
+
+  return updatedCels;
+}
+
+function tryRemoveFromArray<T>(array: T[], elKey: T) {
+  let result = false;
+
+  const el = array.find((x) => x === elKey);
+
+  if (el) {
+    array.splice(array.indexOf(el), 1);
+    result = true;
+  }
+
+  return result;
+}

@@ -150,7 +150,7 @@
         <button
           mat-icon-button
           class="btn"
-          [color]="selectedCelFlexboxPosition ? 'accent' : 'primary'"
+          [color]="selectedCelFlexboxLayout === 'col' ? 'accent' : 'primary'"
           aria-label="To cols layout"
           (click)="toggleElColsWidth()"
         >

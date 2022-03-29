@@ -10,6 +10,7 @@ export const selectCElAction = createAction(
     parentCelId: string;
     celTag: string;
     celStyles: KeyValuePairModel[];
+    children: { celId: string; tagName: string }[];
   }>()
 );
 

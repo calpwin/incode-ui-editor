@@ -66,6 +66,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   }
 
   selectedCelFlexboxPosition?: FlexboxCelPosition;
+  selectedCelFlexboxLayout?: 'col' | 'relative';
 
   public get currentSelectedCelAsync() {
     return this._store.pipe(
@@ -121,7 +122,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
       minSize: [0, 200],
     };
 
-    await this._htmlElementService.initialize();
+    await this._htmlElementService.initializeAsync();
     this._htmlElementService.spaceCElViewConRef = this._viewContainerRef;
     this._htmlElementService.bindEventsToCElements();
   }
@@ -350,7 +351,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
     const currentMedia = await firstValueFrom(this.currentMediaAsync);
 
-    const position = this._htmlElementService.getStyle(
+    const position = await this._htmlElementService.getStyleAsync(
       currentMedia!,
       currentSelectedCel!.id,
       'position',
@@ -372,12 +373,12 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     const rootCelId = await firstValueFrom(this.rootCElementIdAsync);
     const currentMedia = await firstValueFrom(this.currentMediaAsync);
 
-    let directionStyleVal = this._htmlElementService.getStyle(
+    let directionStyleVal = (await this._htmlElementService.getStyleAsync(
       currentMedia!,
       rootCelId,
       'flex-direction',
       true
-    ) as 'row' | 'column';
+    )) as 'row' | 'column';
 
     directionStyleVal = directionStyleVal === 'row' ? 'column' : 'row';
     this.currentRootCelDirection = directionStyleVal;
@@ -392,27 +393,63 @@ export class SpaceComponent implements OnInit, AfterViewInit {
 
   async toggleElColsWidth() {
     const selectedCel = await firstValueFrom(this.currentSelectedCelAsync);
+    const media = await firstValueFrom(this.currentMediaAsync);
 
-    if (!this.selectedCelFlexboxPosition) {
-      this.selectedCelFlexboxPosition = new FlexboxCelPosition(0, 2);
+    if (!selectedCel || selectedCel.childrenIds.length === 0) return;
 
-      this._store.dispatch(
-        changeCElementFlexboxColAction({
-          celId: selectedCel!.id,
-          position: new FlexboxCelPosition(
-            this.selectedCelFlexboxPosition.marginLeftCols,
-            this.selectedCelFlexboxPosition.widthCols
-          ),
-        })
-      );
-    } else {
-      this._store.dispatch(
-        changeCElementFlexboxColAction({
-          celId: selectedCel!.id,
-          position: undefined
-        })
-      );
-    }
+    const selectedHelm = (await this._htmlElementService.getElementAsync(
+      selectedCel.id
+    ))!;
+
+    selectedHelm.flexboxLayout =
+      selectedHelm.flexboxLayout === 'col' ? 'relative' : 'col';
+    this.selectedCelFlexboxLayout = selectedHelm.flexboxLayout;
+
+    selectedCel.childrenIds.forEach(async (celId) => {
+      const helm = (await this._htmlElementService.getElementAsync(celId))!;
+
+      if (this.selectedCelFlexboxLayout === 'col') {
+        this._store.dispatch(
+          changeCElementFlexboxColAction({
+            celId,
+            position: new FlexboxCelPosition(
+              helm.cel.mediaStyles.getStyles(media).flexboxPosition
+                ?.marginLeftCols ?? 1,
+              helm.cel.mediaStyles.getStyles(media).flexboxPosition
+                ?.widthCols ?? 1
+            ),
+          })
+        );
+      } else {
+        this._store.dispatch(
+          changeCElementFlexboxColAction({
+            celId,
+            position: undefined,
+          })
+        );
+      }
+    });
+
+    // if (!this.selectedCelFlexboxPosition) {
+    //   this.selectedCelFlexboxPosition = new FlexboxCelPosition(0, 2);
+
+    //   this._store.dispatch(
+    //     changeCElementFlexboxColAction({
+    //       celId: selectedCel!.id,
+    //       position: new FlexboxCelPosition(
+    //         this.selectedCelFlexboxPosition.marginLeftCols,
+    //         this.selectedCelFlexboxPosition.widthCols
+    //       ),
+    //     })
+    //   );
+    // } else {
+    //   this._store.dispatch(
+    //     changeCElementFlexboxColAction({
+    //       celId: selectedCel!.id,
+    //       position: undefined,
+    //     })
+    //   );
+    // }
   }
 
   private async bindSpaceEventsAsync() {
@@ -444,7 +481,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
             ?.marginLeftCols ?? 0;
 
         if (position.notValid) {
-          const hel = this._htmlElementService.getElement(cel.id)!;
+          const hel = (await this._htmlElementService.getElementAsync(cel.id))!;
           const flexboxClass =
             HtmlCElementService.getFlexboxColClass(currentMedia);
           hel.htmlEl.classList.forEach((cls) => {
@@ -459,7 +496,9 @@ export class SpaceComponent implements OnInit, AfterViewInit {
           });
         }
 
-        this.selectedCelFlexboxPosition = !position.notValid ? position : undefined;
+        this.selectedCelFlexboxPosition = !position.notValid
+          ? position
+          : undefined;
       });
   }
 }

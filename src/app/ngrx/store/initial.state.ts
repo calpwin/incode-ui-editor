@@ -14,9 +14,7 @@ export class AppState {
     public existNotSavedCodeChanges = false,
     public currentMedia = MediaType.None,
     public currentSelectedCelId?: string,
-    public celements: CustomElement[] = [
-      new CustomElement(AppConstants.HtmlRootSpaceElementId, 'div'),
-    ]
+    public celements: CustomElement[] = []
   ) {}
 }
 
@@ -26,5 +24,5 @@ export const initialState: AppState = {
   existNotSavedCodeChanges: false,
   currentMedia: MediaType.None,
   currentSelectedCelId: undefined,
-  celements: [new CustomElement(AppConstants.HtmlRootSpaceElementId, 'div')],
+  celements: [],
 };
