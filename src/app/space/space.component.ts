@@ -1,6 +1,8 @@
+import { HtmlMovableElementService } from './../services/html-movable-celement.service';
 import { currentRootElSelector } from './../ngrx/selectors/space.selectors';
 import {
   ElementStyle,
+  ElementStyles,
   FlexboxCelPosition,
 } from './../ngrx/store/element-style';
 import {
@@ -43,6 +45,7 @@ import {
   currentSelectedCELSelector,
 } from '../ngrx/selectors/space.selectors';
 import { firstValueFrom, map, take, withLatestFrom } from 'rxjs';
+import Moveable from 'moveable';
 
 @Component({
   selector: 'rittry-space',
@@ -92,7 +95,8 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     private readonly _htmlElementService: HtmlCElementService,
     private readonly _store: Store<any>,
     @Inject(DOCUMENT) private readonly _document: Document,
-    private readonly _viewContainerRef: ViewContainerRef
+    private readonly _viewContainerRef: ViewContainerRef,
+    private readonly _HtmlMovableElementService: HtmlMovableElementService
   ) {
     _startupService.bindApplicationEvents();
   }
@@ -103,6 +107,11 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   }
 
   async ngAfterViewInit() {
+
+    const rootHelm = this._document.getElementById(AppConstants.HtmlRootSpaceElementId)!;
+    const hemlEl = this._document.getElementById('testid')!;
+    this._HtmlMovableElementService.makeMovable(rootHelm, hemlEl);
+
     await this.bindSpaceEventsAsync();
 
     this._startupService.appInit();
@@ -386,7 +395,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     this._store.dispatch(
       changeCElementStyleAction({
         celId: rootCelId,
-        styles: [new ElementStyle('flex-direction', directionStyleVal)],
+        styles: new ElementStyles(new ElementStyle('flex-direction', directionStyleVal)),
       })
     );
   }
@@ -429,27 +438,6 @@ export class SpaceComponent implements OnInit, AfterViewInit {
         );
       }
     });
-
-    // if (!this.selectedCelFlexboxPosition) {
-    //   this.selectedCelFlexboxPosition = new FlexboxCelPosition(0, 2);
-
-    //   this._store.dispatch(
-    //     changeCElementFlexboxColAction({
-    //       celId: selectedCel!.id,
-    //       position: new FlexboxCelPosition(
-    //         this.selectedCelFlexboxPosition.marginLeftCols,
-    //         this.selectedCelFlexboxPosition.widthCols
-    //       ),
-    //     })
-    //   );
-    // } else {
-    //   this._store.dispatch(
-    //     changeCElementFlexboxColAction({
-    //       celId: selectedCel!.id,
-    //       position: undefined,
-    //     })
-    //   );
-    // }
   }
 
   private async bindSpaceEventsAsync() {

@@ -7,10 +7,10 @@ export class KeyValuePairModel {
     return this.name === obj.name && this.value === obj.value;
   };
 
-  static override(styles: KeyValuePairModel[], newStyles: KeyValuePairModel[]) {
+  static override(styles: ElementStyles, newStyles: ElementStyles) {
     let stylesChanged = false;
 
-    const overrideStyles = [...styles];
+    const overrideStyles = new ElementStyles(...styles);
 
     newStyles.forEach((newStyle) => {
       const style = overrideStyles.find((x) => x.name === newStyle.name);
@@ -66,11 +66,21 @@ export class FlexboxCelPosition {
 
 
 export class ElementStyles extends Array<ElementStyle> {
-  constructor() {
-    super();
+  constructor(...items: ElementStyle[]) {
+    super(...items);
   }
 
   flexboxPosition?: FlexboxCelPosition;
+
+  tryRemoveStyle(name: string) {
+    const style = this.find(x => x.name === name);
+
+    if (!style) return false;
+
+    this.splice(this.indexOf(style), 1);
+
+    return true;
+  }
 }
 
 export class MediaElementStyles extends Map<MediaType, ElementStyles> {
@@ -82,10 +92,10 @@ export class MediaElementStyles extends Map<MediaType, ElementStyles> {
     fromStyles: MediaElementStyles,
     toStyles: MediaElementStyles
   ) {
-    toStyles.set(MediaType.None, fromStyles.get(MediaType.None) ?? []);
-    toStyles.set(MediaType.Desktop, fromStyles.get(MediaType.Desktop) ?? []);
-    toStyles.set(MediaType.Laptop, fromStyles.get(MediaType.Laptop) ?? []);
-    toStyles.set(MediaType.Tablet, fromStyles.get(MediaType.Tablet) ?? []);
-    toStyles.set(MediaType.Phone, fromStyles.get(MediaType.Phone) ?? []);
+    toStyles.set(MediaType.None, fromStyles.get(MediaType.None) ?? new ElementStyles());
+    toStyles.set(MediaType.Desktop, fromStyles.get(MediaType.Desktop) ?? new ElementStyles());
+    toStyles.set(MediaType.Laptop, fromStyles.get(MediaType.Laptop) ?? new ElementStyles());
+    toStyles.set(MediaType.Tablet, fromStyles.get(MediaType.Tablet) ?? new ElementStyles());
+    toStyles.set(MediaType.Phone, fromStyles.get(MediaType.Phone) ?? new ElementStyles());
   }
 }

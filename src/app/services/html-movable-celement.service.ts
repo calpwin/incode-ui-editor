@@ -1,3 +1,4 @@
+import { ElementStyle, ElementStyles } from './../ngrx/store/element-style';
 import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
 import { Store } from '@ngrx/store';
 import Moveable, { MoveableOptions, OnScale } from 'moveable';
@@ -114,10 +115,10 @@ export class HtmlMovableElementService {
             this._store.dispatch(
               changeCElementStyleAction({
                 celId: id,
-                styles: [
+                styles: new ElementStyles(
                   new KeyValuePairModel('left', `${left}px`),
                   new KeyValuePairModel('top', `${top}px`),
-                ],
+                ),
               })
             );
           }
@@ -157,10 +158,10 @@ export class HtmlMovableElementService {
             this._store.dispatch(
               changeCElementStyleAction({
                 celId: id,
-                styles: [
+                styles: new ElementStyles(
                   new KeyValuePairModel('width', `${width}px`),
                   new KeyValuePairModel('height', `${height}px`),
-                ],
+                ),
               })
             );
             // this.addOrUpdateStyle({
@@ -204,7 +205,7 @@ export class HtmlMovableElementService {
               changeCElementStyleAction({
                 celId: id,
 
-                styles: [new KeyValuePairModel('transform', `${transform}px`)],
+                styles: new ElementStyles(new KeyValuePairModel('transform', `${transform}px`)),
               })
             );
           }
@@ -230,7 +231,7 @@ export class HtmlMovableElementService {
             this._store.dispatch(
               changeCElementStyleAction({
                 celId: id,
-                styles: [new KeyValuePairModel('transform', transform)],
+                styles: new ElementStyles(new KeyValuePairModel('transform', transform)),
               })
             );
           }

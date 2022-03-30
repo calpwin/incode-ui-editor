@@ -24,6 +24,8 @@ import { selectCElAction } from '../ngrx/actions/celement.actions';
 import { firstValueFrom, take } from 'rxjs';
 import { uiEditorSpaceFeatureSelector } from '../ngrx/selectors/space.selectors';
 import {
+  ElementStyle,
+  ElementStyles,
   FlexboxCelPosition,
   KeyValuePairModel,
 } from '../ngrx/store/element-style';
@@ -115,11 +117,21 @@ export class HtmlCElementService {
     saveCurrent = true
   ) {
     const helm = await this._hels.getHelmAsync(celId);
+    if (!helm) return;
 
-    if (!saveCurrent) this._renderer.removeAttribute(helm!.htmlEl, 'style');
+    if (!saveCurrent) this._renderer.removeAttribute(helm.htmlEl, 'style');
 
     styles.forEach((style) => {
-      this._renderer.setStyle(helm!.htmlEl, style.name, style.value);
+      this._renderer.setStyle(helm.htmlEl, style.name, style.value);
+    });
+  }
+
+  async removeStyles(celId: string, styles: ElementStyle[]) {
+    const helm = await this._hels.getHelmAsync(celId);
+    if (!helm) return;
+
+    styles.forEach((style) => {
+      this._renderer.removeStyle(helm.htmlEl, style.name);
     });
   }
 
@@ -203,7 +215,7 @@ export class HtmlCElementService {
     this._hels.set(cel.id, {
       cel,
       htmlEl,
-      flexboxLayout: 'relative'
+      flexboxLayout: 'relative',
     });
   }
 
@@ -354,7 +366,7 @@ export class HtmlCElementService {
         celId,
         parentCelId: parentCelId ?? 'it-is-root-el', //TODO maybe remake
         celTag: htmlEl.tagName,
-        celStyles: [],
+        celStyles: new ElementStyles(),
         children,
       })
     );

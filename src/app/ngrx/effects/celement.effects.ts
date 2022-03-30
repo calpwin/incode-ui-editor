@@ -1,3 +1,4 @@
+import { ElementStyle } from './../store/element-style';
 import { CelementPosition } from './../store/celement-position';
 import { CodeEditorService } from './../../services/code-editor.service';
 import { AppState } from './../store/initial.state';
@@ -7,6 +8,7 @@ import {
   changeCElementPositionAction,
   changeCElementStyleAction,
   removeCElementAction,
+  removeCElementStylesAction,
   selectCElAction,
 } from '../actions/celement.actions';
 import { HtmlCElementService } from '../../services/html-celement.service';
@@ -19,6 +21,7 @@ import {
   changeCssAction,
   changeHtmlAction,
 } from '../actions/code-editor.actions';
+import { ElementStyles } from '../store/element-style';
 
 @Injectable()
 export class CElementEffects {
@@ -40,7 +43,9 @@ export class CElementEffects {
           map((_) =>
             changeCElementStyleAction({
               celId,
-              styles: CelementPosition.stylesFromPositionType(position),
+              styles: new ElementStyles(
+                ...CelementPosition.stylesFromPositionType(position)
+              ),
             })
           )
         )
@@ -48,12 +53,30 @@ export class CElementEffects {
     )
   );
 
-  changeCElementFlexboxColAction$ = createEffect(
+  changeCElementFlexboxColAction$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(changeCElementFlexboxColAction),
+      switchMap(({ celId, position }) =>
+        of(
+          this._htmlCElementService.updateFlexboxPositionAsync(celId, position)
+        ).pipe(
+          map((_) =>
+            removeCElementStylesAction({
+              celId,
+              styles: [new ElementStyle('width', '')],
+            })
+          )
+        )
+      )
+    )
+  );
+
+  removeCElementStylesAction$ = createEffect(
     () =>
       this.actions$.pipe(
-        ofType(changeCElementFlexboxColAction),
-        switchMap(({ celId, position }) =>
-          this._htmlCElementService.updateFlexboxPositionAsync(celId, position)
+        ofType(removeCElementStylesAction),
+        switchMap(({ celId, styles }) =>
+          this._htmlCElementService.removeStyles(celId, styles)
         )
       ),
     { dispatch: false }
@@ -89,7 +112,9 @@ export class CElementEffects {
     () =>
       this.actions$.pipe(
         ofType(selectCElAction),
-        switchMap(({ celId }) => this._htmlCElementService.onCElementSelectAsync(celId))
+        switchMap(({ celId }) =>
+          this._htmlCElementService.onCElementSelectAsync(celId)
+        )
       ),
     { dispatch: false }
   );

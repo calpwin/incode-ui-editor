@@ -1,7 +1,8 @@
+import { ElementStyle } from './../store/element-style';
 import { createAction, props } from '@ngrx/store';
 import { NewCustomElement } from '../store/custom-element.state';
 import { CelementPositionType } from '../store/celement-position';
-import { FlexboxCelPosition, KeyValuePairModel } from '../store/element-style';
+import { ElementStyles, FlexboxCelPosition, KeyValuePairModel } from '../store/element-style';
 
 export const selectCElAction = createAction(
   'Select custom element on dom',
@@ -9,7 +10,7 @@ export const selectCElAction = createAction(
     celId: string;
     parentCelId: string;
     celTag: string;
-    celStyles: KeyValuePairModel[];
+    celStyles: ElementStyles;
     children: { celId: string; tagName: string }[];
   }>()
 );
@@ -26,7 +27,12 @@ export const removeCElementAction = createAction(
 
 export const changeCElementStyleAction = createAction(
   'Change custom element styles',
-  props<{ celId: string; styles: KeyValuePairModel[] }>()
+  props<{ celId: string; styles: ElementStyles }>()
+);
+
+export const removeCElementStylesAction = createAction(
+  'Remove custom element styles',
+  props<{ celId: string; styles: ElementStyle[] }>()
 );
 
 export const changeCElementPositionAction = createAction(

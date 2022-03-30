@@ -4,6 +4,7 @@ import { CelementPosition } from './../store/celement-position';
 import { CustomElement } from './../store/custom-element.state';
 import {
   changeCElementFlexboxColAction,
+  removeCElementStylesAction,
   selectCElAction,
 } from './../actions/celement.actions';
 import { createReducer, on } from '@ngrx/store';
@@ -102,6 +103,26 @@ export const reducers = createReducer(
       celements,
     };
   }),
+  on(removeCElementStylesAction, (state, prop) => {
+    let cel = state.celements.find((x) => x.id === prop.celId)!;
+    let celements = state.celements;
+
+    let celModified = false;
+    prop.styles.forEach((remStyle) => {
+      const styles = cel.mediaStyles.getStyles(state.currentMedia);
+
+      if (styles.tryRemoveStyle(remStyle.name) && !celModified) {
+        cel = { ...cel };
+        celModified = true;
+      }
+    });
+
+    if (celModified) {
+      celements = setCel(celements, cel);
+    }
+
+    return { ...state, celements };
+  }),
   on(changeCElementPositionAction, (state, prop) => {
     return { ...state };
   }),
@@ -111,7 +132,7 @@ export const reducers = createReducer(
     let celements = state.celements;
 
     cel = { ...cel };
-    const elStyles: ElementStyles = [...styles];
+    const elStyles: ElementStyles = new ElementStyles(...styles);
     elStyles.flexboxPosition = prop.position
       ? new FlexboxCelPosition(
           prop.position.marginLeftCols,

@@ -15,7 +15,7 @@ import { changeCElementStyleAction } from '../actions/celement.actions';
 import {
   changeRootCElLayoutAlignAction,
 } from '../actions/space.actions';
-import { ElementStyle } from '../store/element-style';
+import { ElementStyle, ElementStyles } from '../store/element-style';
 
 @Injectable()
 export class SpaceEffects {
@@ -27,7 +27,7 @@ export class SpaceEffects {
         return [
           changeCElementStyleAction({
             celId: rootCelId,
-            styles: [ElementStyle.fromLayoutAlign(toLayoutAlign)],
+            styles: new ElementStyles(ElementStyle.fromLayoutAlign(toLayoutAlign)),
           }),
         ];
       })
