@@ -58,7 +58,7 @@ export class CElementEffects {
       ofType(changeCElementFlexboxColAction),
       switchMap(({ celId, position }) =>
         of(
-          this._htmlCElementService.updateFlexboxPositionAsync(celId, position)
+          this._htmlCElementService.updateFlexboxLayoutAsync(celId, position)
         ).pipe(
           map((_) =>
             removeCElementStylesAction({

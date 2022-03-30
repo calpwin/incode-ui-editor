@@ -9,6 +9,7 @@ import { take, firstValueFrom } from 'rxjs';
 
 export class HtmlCElement {
   public flexboxLayout: 'col' | 'relative' = 'relative';
+  public flexboxDirection: 'row' | 'column' = 'row';
 
   constructor(
     public cel: CustomElement,

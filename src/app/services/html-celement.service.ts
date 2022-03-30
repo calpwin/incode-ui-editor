@@ -87,7 +87,7 @@ export class HtmlCElementService {
       (x) => x.id === AppConstants.HtmlRootSpaceElementId
     )!;
 
-    const hel: HtmlCElement = { cel, htmlEl, flexboxLayout: 'relative' };
+    const hel: HtmlCElement = { cel, htmlEl, flexboxLayout: 'relative', flexboxDirection: 'row' };
 
     this._hels.set(AppConstants.HtmlRootSpaceElementId, hel);
   }
@@ -105,6 +105,9 @@ export class HtmlCElementService {
     }
   }
 
+  // Should use this to avoid Promise in setStylesAsync method for movable->resizable action
+  private _setStylesLastHelm?: HtmlCElement;
+
   /**
    *
    * @param celId
@@ -116,13 +119,26 @@ export class HtmlCElementService {
     styles: KeyValuePairModel[],
     saveCurrent = true
   ) {
-    const helm = await this._hels.getHelmAsync(celId);
-    if (!helm) return;
+    if (this._setStylesLastHelm?.cel.id !== celId) {
+      this._setStylesLastHelm = await this._hels.getHelmAsync(celId);
+    }
 
-    if (!saveCurrent) this._renderer.removeAttribute(helm.htmlEl, 'style');
+    if (!this._setStylesLastHelm) return;
+
+    if (!saveCurrent)
+      this._renderer.removeAttribute(this._setStylesLastHelm.htmlEl, 'style');
+
+    const flexDirectionStyle = styles.find(x => x.name === 'flex-direction');
+    if (flexDirectionStyle) {
+      this._setStylesLastHelm.flexboxDirection = flexDirectionStyle.value === 'row' ? 'row' : 'column';
+    }
 
     styles.forEach((style) => {
-      this._renderer.setStyle(helm.htmlEl, style.name, style.value);
+      this._renderer.setStyle(
+        this._setStylesLastHelm!.htmlEl,
+        style.name,
+        style.value
+      );
     });
   }
 
@@ -159,7 +175,7 @@ export class HtmlCElementService {
     return styles.getPropertyValue(styleName);
   }
 
-  async updateFlexboxPositionAsync(
+  async updateFlexboxLayoutAsync(
     celId: string,
     position?: FlexboxCelPosition
   ) {
@@ -216,6 +232,7 @@ export class HtmlCElementService {
       cel,
       htmlEl,
       flexboxLayout: 'relative',
+      flexboxDirection: 'row'
     });
   }
 
@@ -254,7 +271,6 @@ export class HtmlCElementService {
 
   async onCElementSelectAsync(celId: string) {
     let hel = await this._hels.getHelmAsync(celId);
-    // this._hels.set(celId, hel!);
 
     console.log(hel === this._hels.get(celId));
 
@@ -263,20 +279,8 @@ export class HtmlCElementService {
       return;
     }
 
-    // const cel = this._celements.get(celId)!;
-    // const htmlEl = this._document.getElementById(celId);
-
-    // if (!htmlEl) {
-    //   console.log(`Can not find html element with id ${celId}`);
-    //   return;
-    // }
-
-    let parentHtmlEl = this._document.getElementById(hel.cel.parentCelId);
-
-    // if (!hel) {
-    //   hel = { cel, htmlEl };
-    //   this._htmlEls.set(celId, hel);
-    // }
+    // const parentHel = this._hels.get(hel.cel.parentCelId)!;
+    // let parentHtmlEl = this._document.getElementById(hel.cel.parentCelId);
 
     this._hels.forEach((x) => {
       this.removeSelection(x);
@@ -292,11 +296,14 @@ export class HtmlCElementService {
       return;
     }
 
+    const parentHel = this._hels.get(hel.cel.parentCelId)!;
+
     const moveable = this._htmlMovableElementService.makeMovable(
-      parentHtmlEl!,
+      parentHel.htmlEl,
       hel.htmlEl,
       {
         draggable: window.getComputedStyle(hel.htmlEl).position === 'absolute',
+        renderDirections: parentHel.flexboxLayout === 'col' ? ['s','n'] : undefined
       }
     );
 
@@ -364,10 +371,13 @@ export class HtmlCElementService {
     this._store.dispatch(
       selectCElAction({
         celId,
-        parentCelId: parentCelId ?? 'it-is-root-el', //TODO maybe remake
         celTag: htmlEl.tagName,
         celStyles: new ElementStyles(),
         children,
+        parent: parentHtmlEl ? {
+          celId: parentCelId!,
+          tagName: parentHtmlEl.tagName,
+        } : undefined,
       })
     );
   }

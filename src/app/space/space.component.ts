@@ -70,6 +70,7 @@ export class SpaceComponent implements OnInit, AfterViewInit {
 
   selectedCelFlexboxPosition?: FlexboxCelPosition;
   selectedCelFlexboxLayout?: 'col' | 'relative';
+  currentRootCelFbLayooutDirection?: 'row' | 'column' = undefined;
 
   public get currentSelectedCelAsync() {
     return this._store.pipe(
@@ -82,11 +83,11 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
   }
 
-  get rootCElementIdAsync() {
-    return this._store.pipe(select(currentRootElSelector), take(1));
+  get currentRootCElementIdAsync() {
+    return firstValueFrom(
+      this._store.pipe(select(currentRootElSelector), take(1))
+    );
   }
-
-  currentRootCelDirection: 'row' | 'column' | undefined = undefined;
 
   constructor(
     private signalRService: SignalRService,
@@ -107,11 +108,6 @@ export class SpaceComponent implements OnInit, AfterViewInit {
   }
 
   async ngAfterViewInit() {
-
-    const rootHelm = this._document.getElementById(AppConstants.HtmlRootSpaceElementId)!;
-    const hemlEl = this._document.getElementById('testid')!;
-    this._HtmlMovableElementService.makeMovable(rootHelm, hemlEl);
-
     await this.bindSpaceEventsAsync();
 
     this._startupService.appInit();
@@ -310,12 +306,11 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
   }
 
-  addCElement() {
-    this._store.dispatch(
-      addCElementAction({
-        cel: new NewCustomElement('div'),
-      })
-    );
+  async addCElement() {
+    const cel = new NewCustomElement('div');
+    cel.parentCelId = await this.currentRootCElementIdAsync;
+
+    this._store.dispatch(addCElementAction({ cel }));
   }
 
   saveCodeToIde() {
@@ -378,8 +373,8 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     );
   }
 
-  async toggleRootElDirection() {
-    const rootCelId = await firstValueFrom(this.rootCElementIdAsync);
+  async toggleRootElLayoutDirection() {
+    const rootCelId = await this.currentRootCElementIdAsync;
     const currentMedia = await firstValueFrom(this.currentMediaAsync);
 
     let directionStyleVal = (await this._htmlElementService.getStyleAsync(
@@ -390,17 +385,19 @@ export class SpaceComponent implements OnInit, AfterViewInit {
     )) as 'row' | 'column';
 
     directionStyleVal = directionStyleVal === 'row' ? 'column' : 'row';
-    this.currentRootCelDirection = directionStyleVal;
+    this.currentRootCelFbLayooutDirection = directionStyleVal;
 
     this._store.dispatch(
       changeCElementStyleAction({
         celId: rootCelId,
-        styles: new ElementStyles(new ElementStyle('flex-direction', directionStyleVal)),
+        styles: new ElementStyles(
+          new ElementStyle('flex-direction', directionStyleVal)
+        ),
       })
     );
   }
 
-  async toggleElColsWidth() {
+  async toggleElColLayout() {
     const selectedCel = await firstValueFrom(this.currentSelectedCelAsync);
     const media = await firstValueFrom(this.currentMediaAsync);
 
@@ -458,6 +455,8 @@ export class SpaceComponent implements OnInit, AfterViewInit {
           return;
         }
 
+        const hel = (await this._htmlElementService.getElementAsync(cel.id))!;
+
         const currentMedia = await firstValueFrom(this.currentMediaAsync);
 
         const position = new FlexboxCelPosition(0, 0);
@@ -469,7 +468,6 @@ export class SpaceComponent implements OnInit, AfterViewInit {
             ?.marginLeftCols ?? 0;
 
         if (position.notValid) {
-          const hel = (await this._htmlElementService.getElementAsync(cel.id))!;
           const flexboxClass =
             HtmlCElementService.getFlexboxColClass(currentMedia);
           hel.htmlEl.classList.forEach((cls) => {
@@ -487,6 +485,8 @@ export class SpaceComponent implements OnInit, AfterViewInit {
         this.selectedCelFlexboxPosition = !position.notValid
           ? position
           : undefined;
+
+        this.currentRootCelFbLayooutDirection = hel.flexboxDirection;
       });
   }
 }

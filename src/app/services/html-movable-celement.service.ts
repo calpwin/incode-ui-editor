@@ -5,6 +5,8 @@ import Moveable, { MoveableOptions, OnScale } from 'moveable';
 import { changeCElementStyleAction } from '../ngrx/actions/celement.actions';
 import { KeyValuePairModel } from '../ngrx/store/element-style';
 
+
+
 @Injectable({
   providedIn: 'root',
 })
@@ -19,31 +21,6 @@ export class HtmlMovableElementService {
   }
 
   public initialize() {
-    // this._store
-    //   .select(addUiElementSelector)
-    //   .pipe(withLatestFrom(this._store.select(currentSpaceElementSelector)))
-    //   .subscribe(([el, speceEl]) => {
-    //     if (el) {
-    //       this.makeMovable(el, speceEl);
-    //     }
-    //   });
-    // this._store
-    //   .select(lastElementStyleChangedSelector)
-    //   .pipe(withLatestFrom(this._store.select(elementsSelector)))
-    //   .subscribe(([style, els]) => {
-    //     if (!style || !els) return;
-    //     this.changeElementStyles({
-    //       el: els.find((x) => x.id === style.elId)!,
-    //       styles: style.changedStyles,
-    //     });
-    //   });
-    // this._store.select(changeAttributeElementSelector).subscribe((changes) => {
-    //   if (changes)
-    //     this.changeElementAttributes({
-    //       el: changes.el,
-    //       attributes: changes.changedAttributes,
-    //     });
-    // });
   }
 
   public makeMovable(
@@ -72,7 +49,7 @@ export class HtmlMovableElementService {
         throttleResize: 0,
         throttleScale: 0,
         throttleRotate: 0,
-        dragArea: true,
+        dragArea: true
       },
       ...options,
     });

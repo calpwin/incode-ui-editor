@@ -1,5 +1,5 @@
 import { AppConstants } from './../../services/app.constant';
-import { ElementStyles } from './../store/element-style';
+import { ElementStyle, ElementStyles } from './../store/element-style';
 import { CelementPosition } from './../store/celement-position';
 import { CustomElement } from './../store/custom-element.state';
 import {
@@ -52,11 +52,14 @@ export const reducers = createReducer(
     if (!findCel) {
       const cel = new CustomElement(prop.celId, prop.celTag);
       cel.mediaStyles.set(state.currentMedia, prop.celStyles);
-      cel.parentCelId = prop.parentCelId;
+      cel.parentCelId = prop.parent?.celId ?? 'it-is-root-el'; //TODO maybe should remake 'it-is-root-el'
       celements.push(cel);
 
-      if (cel.id !== AppConstants.HtmlRootSpaceElementId) {
-        let parentCel = state.celements.find((x) => x.id === prop.parentCelId)!;
+      if (prop.parent) {
+        let parentCel = state.celements.find(
+          (x) => x.id === prop.parent!.celId
+        );
+        parentCel ??= new CustomElement(prop.parent.celId, prop.parent.tagName);
         parentCel = { ...parentCel };
         parentCel.childrenIds = [...parentCel.childrenIds, cel.id];
         celements = setCel(celements, parentCel);
@@ -88,8 +91,6 @@ export const reducers = createReducer(
     );
 
     let celements = state.celements;
-
-    // console.log(`${cel.id} : ${styles?.map(x => `${x.name}:${x.value}`)}`);
 
     if (stylesChanged) {
       cel = { ...cel };
@@ -132,13 +133,29 @@ export const reducers = createReducer(
     let celements = state.celements;
 
     cel = { ...cel };
-    const elStyles: ElementStyles = new ElementStyles(...styles);
+    let elStyles: ElementStyles = new ElementStyles(...styles);
     elStyles.flexboxPosition = prop.position
       ? new FlexboxCelPosition(
           prop.position.marginLeftCols,
           prop.position.widthCols
         )
       : undefined;
+
+    if (prop.position) {
+      const relPosStyles = new ElementStyles(
+        new ElementStyle('position', 'relative')
+      );
+      const { styles, stylesChanged } = ElementStyle.override(
+        elStyles,
+        relPosStyles
+      );
+
+      if (stylesChanged) {
+        cel.mediaStyles.setStylesToAllMedia(relPosStyles);
+        elStyles = styles;
+      }
+    }
+
     cel.mediaStyles.set(state.currentMedia, elStyles);
 
     celements = [...celements.filter((x) => x.id !== cel.id), cel];
@@ -162,7 +179,7 @@ export const reducers = createReducer(
         (x) => x.id === prop.cel.parentCelId
       )!;
       parentCel = { ...parentCel };
-      parentCel.childrenIds.push(cel.id);
+      parentCel.childrenIds = [...parentCel.childrenIds, cel.id];
       celements = setCel(celements, parentCel);
     }
 

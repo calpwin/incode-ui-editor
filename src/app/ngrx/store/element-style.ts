@@ -72,6 +72,10 @@ export class ElementStyles extends Array<ElementStyle> {
 
   flexboxPosition?: FlexboxCelPosition;
 
+  contains(name: string) {
+    return this.map(x => x.name).includes(name);
+  }
+
   tryRemoveStyle(name: string) {
     const style = this.find(x => x.name === name);
 
@@ -86,6 +90,14 @@ export class ElementStyles extends Array<ElementStyle> {
 export class MediaElementStyles extends Map<MediaType, ElementStyles> {
   getStyles(media: MediaType) {
     return this.get(media)!;
+  }
+
+  setStylesToAllMedia(styles: ElementStyles) {
+    this.set(MediaType.None, KeyValuePairModel.override(this.get(MediaType.None)!, styles).styles);
+    this.set(MediaType.Desktop, KeyValuePairModel.override(this.get(MediaType.Desktop)!, styles).styles);
+    this.set(MediaType.Laptop, KeyValuePairModel.override(this.get(MediaType.Laptop)!, styles).styles);
+    this.set(MediaType.Tablet, KeyValuePairModel.override(this.get(MediaType.Tablet)!, styles).styles);
+    this.set(MediaType.Phone, KeyValuePairModel.override(this.get(MediaType.Phone)!, styles).styles);
   }
 
   static override(

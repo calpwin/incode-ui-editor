@@ -140,10 +140,10 @@
           class="btn"
           color="primary"
           aria-label="Arrange elements horizontal"
-          (click)="toggleRootElDirection()"
+          (click)="toggleRootElLayoutDirection()"
         >
           <mat-icon>{{
-            currentRootCelDirection === "row" ? "more_vert" : "more_horiz"
+            currentRootCelFbLayooutDirection === "row" ? "more_vert" : "more_horiz"
           }}</mat-icon>
         </button>
 
@@ -151,8 +151,9 @@
           mat-icon-button
           class="btn"
           [color]="selectedCelFlexboxLayout === 'col' ? 'accent' : 'primary'"
+          [disabled]="currentRootCelFbLayooutDirection === 'column'"
           aria-label="To cols layout"
-          (click)="toggleElColsWidth()"
+          (click)="toggleElColLayout()"
         >
           <mat-icon>view_column</mat-icon>
         </button>
